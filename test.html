@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LifeOS Test</title>
+</head>
+<body>
+    <h1>Test Page</h1>
+    <div id="test">Testing...</div>
+    
+    <script>
+        console.log("Starting test...");
+        
+        // Test script.js loading
+        try {
+            fetch('./script.js')
+                .then(response => response.text())
+                .then(script => {
+                    console.log("Script.js loaded, length:", script.length);
+                    
+                    // Check for syntax errors
+                    try {
+                        new Function(script);
+                        console.log("✅ Script.js has no syntax errors");
+                    } catch (e) {
+                        console.error("❌ Syntax error in script.js:", e);
+                    }
+                })
+                .catch(e => console.error("Failed to load script.js:", e));
+        } catch (e) {
+            console.error("Error testing script.js:", e);
+        }
+        
+        // Test planner.js loading
+        try {
+            fetch('./planner.js')
+                .then(response => response.text())
+                .then(script => {
+                    console.log("Planner.js loaded, length:", script.length);
+                    
+                    // Check for syntax errors
+                    try {
+                        new Function(script);
+                        console.log("✅ Planner.js has no syntax errors");
+                    } catch (e) {
+                        console.error("❌ Syntax error in planner.js:", e);
+                    }
+                })
+                .catch(e => console.error("Failed to load planner.js:", e));
+        } catch (e) {
+            console.error("Error testing planner.js:", e);
+        }
+    </script>
+</body>
+</html>
