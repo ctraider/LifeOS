@@ -87,9 +87,22 @@ function savePersonaData() {
 
 function loadPersonaData() {
     const personaDataFromStorage = JSON.parse(localStorage.getItem('personaData'));
+    
+    // Определяем имя (из сохраненных данных или пустое)
+    const name = personaDataFromStorage?.name || '';
+
+    // ВСЕГДА обновляем имя во всех местах
+    const personaNameInput = document.getElementById('personaNameInput');
+    if (personaNameInput) personaNameInput.value = name;
+
+    const characterNameSpan = document.getElementById('characterName');
+    if (characterNameSpan) characterNameSpan.textContent = name || 'Персонаж';
+    
+    const healthCharacterNameSpan = document.getElementById('healthCharacterName');
+    if (healthCharacterNameSpan) healthCharacterNameSpan.textContent = name || 'Персонаж';
+
+    // Загружаем остальные данные только если они есть
     if (personaDataFromStorage) {
-        document.getElementById('personaNameInput').value = personaDataFromStorage.name || 'Имярек';
-        document.getElementById('characterName').textContent = personaDataFromStorage.name || 'Имярек';
         document.getElementById('personaAgeInput').value = personaDataFromStorage.age || '28';
         document.getElementById('personaBackstoryInput').value = personaDataFromStorage.backstory || 'Исследователь пустошей';
         document.getElementById('personaTraitsInput').value = personaDataFromStorage.traits || 'Трудолюбивый, Оптимист, Нервный';
