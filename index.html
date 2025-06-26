@@ -659,6 +659,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Chart.js для лепестковой диаграммы -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
     :root {
       --primary-color: #4CAF50;
@@ -671,6 +673,16 @@
       --btn-hover: #43A047;
       --btn-edit: #FFC107;
       --btn-delete: #DC3545;
+      --primary-color: #0074D9; /* Blue */
+      --secondary-color: #FF4136; /* Red */
+      --background-color: #F5F5F5; /* Light Gray */
+      --card-bg: #FFFFFF; /* White */
+      --shadow-color: rgba(0, 0, 0, 0.1);
+      --text-color: #111111; /* Very Dark Gray */
+      --border-color: #DDDDDD; /* Light Gray */
+      --btn-hover: #0056b3; /* Darker Blue */
+      --btn-edit: #FF851B; /* Orange */
+      --btn-delete: #85144b; /* Dark Red */
       --transition-duration: 0.3s;
     }
     .dark-theme {
@@ -1152,11 +1164,35 @@
                 <li style="color:red;">Нет оповещений.</li>
             </ul>
         </div>
+
+        <!-- Колесо жизненного баланса -->
+        <div class="summary-section" style="margin-top: 1rem; padding: 1rem; background: #e9ecef; border-radius: 8px;">
+            <h3>Колесо жизненного баланса</h3>
+            <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                <div style="flex: 1; max-width: 400px;">
+                    <canvas id="lifeBalanceChart" width="400" height="400"></canvas>
+                </div>
+                <div style="flex: 1; min-width: 300px;">
+                    <h4 style="margin-top: 0; color: #4A4A4A;">Настройка областей жизни:</h4>
+                    <div id="lifeBalanceControls" style="display: grid; gap: 10px;">
+                        <!-- Контролы будут добавлены через JavaScript -->
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button onclick="resetLifeBalance()" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Сбросить</button>
+                        <button onclick="saveLifeBalance()" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Сохранить</button>
+                    </div>
+                    <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 0.9em; color: #495057;">
+                        <strong>Средний балл:</strong> <span id="averageScore">0</span>/10<br>
+                        <strong>Статус:</strong> <span id="balanceStatus">Требует внимания</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Персона -->
     <div id="persona" class="content">
-        <h2>Персона: <input type="text" id="personaNameInput" placeholder="Имя персонажа" style="width: 200px;" value="Имярек"> <button onclick="window.savePersonaData()">Сохранить Персону</button></h2>
+        <h2>Персона: <input type="text" id="personaNameInput" placeholder="Имя персонажа" style="width: 200px;"> <button onclick="window.savePersonaData()">Сохранить Персону</button></h2>
         <div class="persona-section" style="display: flex; gap: 2rem;">
             <div class="persona-avatar" style="width: 150px; height: 150px; background: #4A4A4A; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #888; border: 1px solid #2A2A2A;">
                 Аватар
@@ -1651,20 +1687,273 @@
 
     <script src="script.js"></script>
     <script src="planner.js"></script>
+    
+    <!-- Скрипт для колеса жизненного баланса -->
+    <script>
+        let lifeBalanceChart;
+        
+        // Области жизни по умолчанию
+        const defaultLifeAreas = [
+            { name: 'Здоровье', value: 7, color: '#FF6384' },
+            { name: 'Карьера', value: 6, color: '#36A2EB' },
+            { name: 'Финансы', value: 5, color: '#FFCE56' },
+            { name: 'Отношения', value: 8, color: '#4BC0C0' },
+            { name: 'Семья', value: 7, color: '#9966FF' },
+            { name: 'Друзья', value: 6, color: '#FF9F40' },
+            { name: 'Хобби', value: 4, color: '#FF6384' },
+            { name: 'Развитие', value: 5, color: '#C9CBCF' },
+            { name: 'Духовность', value: 3, color: '#4BC0C0' },
+            { name: 'Отдых', value: 6, color: '#36A2EB' }
+        ];
+        
+        // Загрузка данных из localStorage
+        function loadLifeBalanceData() {
+            const saved = localStorage.getItem('lifeBalanceData');
+            return saved ? JSON.parse(saved) : defaultLifeAreas;
+        }
+        
+        // Сохранение данных в localStorage
+        function saveLifeBalance() {
+            const areas = [];
+            const controls = document.querySelectorAll('#lifeBalanceControls .life-area-control');
+            controls.forEach((control, index) => {
+                const nameInput = control.querySelector('.area-name');
+                const valueInput = control.querySelector('.area-value');
+                areas.push({
+                    name: nameInput.value,
+                    value: parseInt(valueInput.value),
+                    color: defaultLifeAreas[index % defaultLifeAreas.length].color
+                });
+            });
+            localStorage.setItem('lifeBalanceData', JSON.stringify(areas));
+            updateChart(areas);
+            updateStats(areas);
+            alert('Данные колеса жизненного баланса сохранены!');
+        }
+        
+        // Сброс к значениям по умолчанию
+        function resetLifeBalance() {
+            if (confirm('Вы уверены, что хотите сбросить все значения к настройкам по умолчанию?')) {
+                localStorage.removeItem('lifeBalanceData');
+                initLifeBalanceChart();
+            }
+        }
+        
+        // Создание контролов для редактирования
+        function createControls(areas) {
+            const container = document.getElementById('lifeBalanceControls');
+            container.innerHTML = '';
+            
+            areas.forEach((area, index) => {
+                const controlDiv = document.createElement('div');
+                controlDiv.className = 'life-area-control';
+                controlDiv.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 5px;
+                    background: white;
+                    border-radius: 4px;
+                    border: 1px solid #ddd;
+                `;
+                
+                controlDiv.innerHTML = `
+                    <div style="width: 20px; height: 20px; background: ${area.color}; border-radius: 50%; flex-shrink: 0;"></div>
+                    <input type="text" class="area-name" value="${area.name}" 
+                           style="flex: 1; border: none; background: transparent; font-size: 0.9em; outline: none;">
+                    <input type="range" class="area-value" min="0" max="10" value="${area.value}" 
+                           style="width: 80px;" 
+                           oninput="updateChartRealtime()">
+                    <span class="area-value-display" style="min-width: 20px; font-weight: bold; color: #495057;">${area.value}</span>
+                `;
+                
+                container.appendChild(controlDiv);
+                
+                // Обновление отображения значения при изменении слайдера
+                const slider = controlDiv.querySelector('.area-value');
+                const display = controlDiv.querySelector('.area-value-display');
+                slider.addEventListener('input', function() {
+                    display.textContent = this.value;
+                });
+            });
+        }
+        
+        // Обновление диаграммы в реальном времени
+        function updateChartRealtime() {
+            const areas = [];
+            const controls = document.querySelectorAll('#lifeBalanceControls .life-area-control');
+            controls.forEach((control, index) => {
+                const nameInput = control.querySelector('.area-name');
+                const valueInput = control.querySelector('.area-value');
+                areas.push({
+                    name: nameInput.value,
+                    value: parseInt(valueInput.value),
+                    color: defaultLifeAreas[index % defaultLifeAreas.length].color
+                });
+            });
+            updateChart(areas);
+            updateStats(areas);
+        }
+        
+        // Обновление диаграммы
+        function updateChart(areas) {
+            if (lifeBalanceChart) {
+                lifeBalanceChart.data.labels = areas.map(area => area.name);
+                lifeBalanceChart.data.datasets[0].data = areas.map(area => area.value);
+                lifeBalanceChart.data.datasets[0].backgroundColor = areas.map(area => area.color + '40');
+                lifeBalanceChart.data.datasets[0].borderColor = areas.map(area => area.color);
+                lifeBalanceChart.update('none');
+            }
+        }
+        
+        // Обновление статистики
+        function updateStats(areas) {
+            const average = areas.reduce((sum, area) => sum + area.value, 0) / areas.length;
+            const avgElement = document.getElementById('averageScore');
+            const statusElement = document.getElementById('balanceStatus');
+            
+            if (avgElement) {
+                avgElement.textContent = average.toFixed(1);
+            }
+            
+            if (statusElement) {
+                let status = 'Требует внимания';
+                let color = '#dc3545';
+                
+                if (average >= 8) {
+                    status = 'Отличный баланс!';
+                    color = '#28a745';
+                } else if (average >= 6) {
+                    status = 'Хороший баланс';
+                    color = '#ffc107';
+                } else if (average >= 4) {
+                    status = 'Средний баланс';
+                    color = '#fd7e14';
+                }
+                
+                statusElement.textContent = status;
+                statusElement.style.color = color;
+                statusElement.style.fontWeight = 'bold';
+            }
+        }
+        
+        // Инициализация диаграммы
+        function initLifeBalanceChart() {
+            const areas = loadLifeBalanceData();
+            createControls(areas);
+            
+            const ctx = document.getElementById('lifeBalanceChart');
+            if (!ctx) return;
+            
+            // Уничтожаем существующую диаграмму если есть
+            if (lifeBalanceChart) {
+                lifeBalanceChart.destroy();
+            }
+            
+            lifeBalanceChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: areas.map(area => area.name),
+                    datasets: [{
+                        label: 'Уровень удовлетворенности',
+                        data: areas.map(area => area.value),
+                        backgroundColor: areas.map(area => area.color + '40'),
+                        borderColor: areas.map(area => area.color),
+                        borderWidth: 2,
+                        pointBackgroundColor: areas.map(area => area.color),
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed.r + '/10';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 10,
+                            stepSize: 1,
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            grid: {
+                                color: '#4A4A4A',
+                                lineWidth: 1
+                            },
+                            angleLines: {
+                                color: '#4A4A4A',
+                                lineWidth: 1
+                            },
+                            pointLabels: {
+                                color: '#2E2E2E',
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                color: '#4A4A4A',
+                                font: {
+                                    size: 10
+                                },
+                                stepSize: 2,
+                                showLabelBackdrop: false
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false
+                    },
+                    animation: {
+                        duration: 800,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+            
+            updateStats(areas);
+        }
+        
+        // Глобальные функции для доступа из HTML
+        window.saveLifeBalance = saveLifeBalance;
+        window.resetLifeBalance = resetLifeBalance;
+        window.updateChartRealtime = updateChartRealtime;
+        
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Небольшая задержка для обеспечения полной загрузки Chart.js
+            setTimeout(() => {
+                if (typeof Chart !== 'undefined') {
+                    initLifeBalanceChart();
+                } else {
+                    console.error('Chart.js не загружен');
+                }
+            }, 100);
+        });
+    </script>
       <!-- ================= ЧАТ-БОТ ================= -->
-  <div id="chat-container" style="position: fixed; bottom: 20px; right: 20px; width: 300px; 
-  background: #fff; border: 1px solid #ccc; border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,.1);">
-<div id="chat-header" style="padding: 10px; border-bottom: 1px solid #eee; 
-font-weight: bold; text-align: center;">
-Помощник
-  <!-- ================= ЧАТ-БОТ ================= -->
   <div id="chat-container" style="position: fixed; bottom: 20px; right: 20px; width: 300px;
                                     background: #fff; border: 1px solid #ccc; border-radius: 8px;
                                     box-shadow: 0 2px 10px rgba(0,0,0,.1); z-index: 999;">
     <div id="chat-header" style="padding: 10px; border-bottom: 1px solid #eee;
-                                 font-weight: bold; text-align: center;">
-      Помощник
+                                 font-weight: bold; cursor: pointer;
+                                 display: flex; justify-content: space-between; align-items: center;"
+         onclick="toggleChatCollapse()">
+      <span>Помощник</span>
+      <span id="chat-toggle-icon" style="font-size: 14px; user-select: none;">▼</span>
     </div>
     <div id="chat-messages" style="height: 200px; overflow-y: auto; padding: 10px; font-size: 14px;">
       <!-- сюда будут падать сообщения -->
@@ -1678,6 +1967,29 @@ font-weight: bold; text-align: center;">
   <!-- =========================================== -->
 
   <script>
+    // Функция для сворачивания/разворачивания чата
+    let isChatCollapsed = false;
+    
+    function toggleChatCollapse() {
+      const chatMessages = document.getElementById("chat-messages");
+      const chatInput = document.getElementById("chat-input");
+      const toggleIcon = document.getElementById("chat-toggle-icon");
+      
+      if (isChatCollapsed) {
+        // Разворачиваем
+        chatMessages.style.display = "block";
+        chatInput.style.display = "flex";
+        toggleIcon.textContent = "▼";
+        isChatCollapsed = false;
+      } else {
+        // Сворачиваем
+        chatMessages.style.display = "none";
+        chatInput.style.display = "none";
+        toggleIcon.textContent = "▲";
+        isChatCollapsed = true;
+      }
+    }
+    
     // 1) Функция общения с LM Studio через OpenAI-совместимый API
     async function queryLMStudio(prompt, contextTasks) {
       const messages = [
