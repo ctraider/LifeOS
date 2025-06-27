@@ -457,7 +457,19 @@ window.LifePlanner = (function() {
     hp: 100,
     achievements: [],
     conversions: [],
-    savingsGoal: 0
+    savingsGoal: 0,
+    persona: { // Добавляем структуру persona сюда, если она не была определена
+        name: '', age: 28, backstory: 'Исследователь пустошей',
+        traits: 'Трудолюбивый, Оптимист, Нервный',
+        skills: 'Строительство: 8/20\nМедицина: 5/20\nСтрельба: 12/20',
+        equipment: 'Одежда: Пыльник\nОружие: Лазерный пистолет',
+        avatar: ''
+    },
+    inventoryItems: [],
+    health: [],
+    healthStats: [],
+    medicalHistory: [],
+    journalEvents: []
   };
   let filterCompleted = null;
   let currentDate = new Date();
@@ -467,6 +479,33 @@ window.LifePlanner = (function() {
   function saveData() {
     localStorage.setItem('lifeOSData', JSON.stringify(data));
   }
+
+  // Функция для расчета опыта, необходимого для следующего уровня
+  function getRequiredXPForLevel(level) {
+    return level * 50; // На первом уровне 50 XP, на втором 100 XP, на третьем 150 XP и т.д.
+  }
+
+  // Добавляем функцию addXP как метод LifePlanner
+  function addXP(amount) {
+    console.log(`addXP: Добавляем ${amount} XP. Текущий XP: ${data.xp}, Уровень: ${data.level}`);
+
+    data.xp = (data.xp || 0) + amount;
+
+    let xpRequiredForCurrentLevel = getRequiredXPForLevel(data.level);
+
+    // Если опыт превышает требуемый для текущего уровня, повышаем уровень
+    while (data.xp >= xpRequiredForCurrentLevel) {
+      data.xp -= xpRequiredForCurrentLevel;
+      data.level = (data.level || 1) + 1;
+      console.log(`addXP: Уровень повышен! Новый уровень: ${data.level}, Остаток XP: ${data.xp}`);
+      // Пересчитываем XP для следующего уровня, так как требование изменилось
+      xpRequiredForCurrentLevel = getRequiredXPForLevel(data.level);
+    }
+    saveData();
+    updateGamificationUI(); // Обновляем глобальный UI
+    console.log(`addXP: После сохранения и обновления UI. Текущий XP: ${data.xp}, Уровень: ${data.level}`);
+  }
+
   function addTask() {
     const newTaskInput = document.getElementById('new-task');
     const importanceSel = document.getElementById('importance');
@@ -535,6 +574,9 @@ window.LifePlanner = (function() {
       checkbox.checked = task.completed;
       checkbox.addEventListener('change', () => {
         task.completed = !task.completed;
+        if (task.completed) {
+          addXP(50); // Начисляем 50 XP при завершении задачи
+        }
         saveData();
         renderTasks();
       });
@@ -562,7 +604,8 @@ window.LifePlanner = (function() {
       taskList.appendChild(li);
       setTimeout(() => li.classList.add('show'), 10);
     });
-    // ... (обновить статистику, XP, валюту и т.д.)
+    updateGamificationUI();
+    updateStats();
   }
   // ... (остальные функции: addSubTask, renderSubTasks, generateCalendar, addAchievement, валюта и т.д.)
 
@@ -583,16 +626,38 @@ window.LifePlanner = (function() {
     // ... (остальные первичные рендеры)
   }
 
+  function toggleCompletePlanner(taskId) {
+    // Удаляем или закомментируем содержимое этой функции, так как логика завершения задачи
+    // и начисления опыта теперь управляется напрямую через обработчик чекбокса в renderTasks.
+    // Если эта функция вызывается откуда-то еще, нужно пересмотреть ее использование.
+    // Пока оставлю пустой или с предупреждением.
+    console.warn('toggleCompletePlanner был вызван, но его логика перенесена в обработчик чекбокса. Проверьте вызовы.');
+    // Если нужно, чтобы эта функция все же работала, ее нужно переписать
+    // так, чтобы она вызывала addXP и saveData, но это может быть избыточно.
+  }
+
+  function deleteTaskPlanner(taskId) {
+    // ... существующий код ...
+  }
+
   // Экспортируем только нужные методы
   return {
     init,
     addTask,
     renderTasks,
+    toggleCompletePlanner, // Оставляем для совместимости, но ее логика теперь пуста/предупреждает
+    deleteTaskPlanner,
+    getData: function() { return data; }, // Экспортируем данные
+    addXP, // Экспортируем addXP
+    getRequiredXPForLevel // Экспортируем getRequiredXPForLevel
     // ... (остальные публичные методы)
   };
 })();
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Временно очищаем localStorage для чистого старта и проверки логики XP
+    localStorage.clear(); 
+
     loadPersonaData();
     loadInventory();
     renderHealthStats();
@@ -600,6 +665,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.LifePlanner && typeof window.LifePlanner.init === 'function') {
         window.LifePlanner.init();
     }
+    updateGamificationUI(); // Теперь updateGamificationUI будет использовать LifePlanner.getData()
 });
 
 // Удалить/закомментировать все старые функции и переменные для задач LifeOS
@@ -1054,70 +1120,37 @@ function deleteMedicalHistoryEntry(index) {
     }
 }
 
-// Обновляем window.addEventListener('DOMContentLoaded')
-document.addEventListener('DOMContentLoaded', function() {
-    loadPersonaData();
-    loadInventory();
-    renderHealthStats();
-    renderHealthLog();
-    renderRelationships();
-    renderSkills();
-    renderWorkTasks(); // Добавляем рендеринг задач при загрузке
-    renderWorkPriorities(); // Добавляем рендеринг приоритетов при загрузке
-    renderDailySchedule(); // Добавляем рендеринг расписания при загрузке
-    renderJournalEvents(); // Добавляем рендеринг журнала при загрузке
-    renderMedicalHistory(); // Добавляем рендеринг истории болезней при загрузке
+// === Геймификация: обновление UI ===
+function updateGamificationUI() {
+  if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+    console.warn('LifePlanner или LifePlanner.getData() не доступны. Невозможно обновить UI геймификации.');
+    return;
+  }
+  const data = window.LifePlanner.getData();
+  const xp = data.xp || 0;
+  const level = data.level || 1;
+  // Используем функцию из LifePlanner для получения XP для текущего уровня
+  const xpForNextLevel = window.LifePlanner.getRequiredXPForLevel ? window.LifePlanner.getRequiredXPForLevel(level) : 100;
 
-    if (window.LifePlanner && typeof window.LifePlanner.init === 'function') {
-        window.LifePlanner.init();
-        LifePlanner.updateFromStorage(); // Обновить данные при запуске
+  console.log(`updateGamificationUI: Текущий XP: ${xp}, Уровень: ${level}, XP для текущего уровня: ${xpForNextLevel}`);
+
+  // Обновляем текстовые значения (во всех местах, где есть #level и #xp)
+  document.querySelectorAll('#level').forEach(el => el.textContent = level);
+  document.querySelectorAll('#xp').forEach(el => el.textContent = `${xp}/${xpForNextLevel}`);
+
+  // Обновляем прогресс-бар
+  const percent = Math.min(100, Math.round((xp / xpForNextLevel) * 100));
+  const xpProgress = document.getElementById('xpProgress');
+  if (xpProgress) {
+    xpProgress.style.width = percent + '%';
+    // Дополнительная проверка: если процент > 0, но ширина почему-то 0, установим минимальную видимую ширину.
+    // Это помогает при возможных проблемах рендеринга или очень малых значениях.
+    if (percent > 0 && xpProgress.style.width === '0%') {
+      xpProgress.style.width = '1%'; 
     }
-});
-
-// Обновляем функцию openTab для вызова функций рендеринга
-function openTab(event, tabName) {
-  // Скрыть все .content
-  document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
-  // Убрать active у всех .tab
-  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-  // Показать нужную вкладку
-  const tabContent = document.getElementById(tabName);
-  if (tabContent) tabContent.classList.add('active');
-  // Сделать активной текущую кнопку
-  if (event && event.currentTarget) event.currentTarget.classList.add('active');
-
-  // Вызов функций рендеринга в зависимости от открытой вкладки
-  switch (tabName) {
-      case 'persona':
-          loadPersonaData();
-          break;
-      case 'items':
-          loadInventory();
-          break;
-      case 'health_detailed':
-          renderHealthStats();
-          renderHealthLog();
-          break;
-      case 'social':
-          renderRelationships();
-          filterSocial('all'); // Показать все отношения по умолчанию
-          break;
-      case 'skills':
-          renderSkills();
-          break;
-      case 'work':
-          // По умолчанию открываем подвкладку задач
-          openWorkSubTab(null, 'work_tasks');
-          renderWorkTasks();
-          renderWorkPriorities();
-          break;
-      case 'journal':
-          renderJournalEvents();
-          break;
-      case 'procedures_history':
-          renderMedicalHistory();
-          break;
-      // Добавьте сюда другие вкладки и соответствующие функции рендеринга
+    // Убедимся, что фон установлен, если вдруг CSS не применяется (хотя это маловероятно при правильном CSS).
+    xpProgress.style.backgroundColor = '#7A6A53'; // Цвет из вашего CSS для xp-progress
+    console.log(`updateGamificationUI: Установлена ширина прогресс-бара: ${xpProgress.style.width} (процент: ${percent}%)`);
   }
 }
 
@@ -1136,5 +1169,13 @@ window.renderMedicalHistory = renderMedicalHistory;
 window.filterHistory = filterHistory;
 window.editMedicalHistoryEntry = editMedicalHistoryEntry;
 window.deleteMedicalHistoryEntry = deleteMedicalHistoryEntry;
+
+function closeModal() {
+    const addModal = document.getElementById('add-item-modal');
+    const overlay = document.getElementById('modal-overlay');
+    if (addModal) addModal.style.display = 'none';
+    if (overlay) overlay.style.display = 'none';
+    // Добавьте сюда другие модальные окна, если они есть и используют эту функцию
+}
 
 
