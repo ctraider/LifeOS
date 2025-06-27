@@ -35,27 +35,6 @@ window.saveHealthStat = saveHealthStat;
 window.deleteHealthEntry = deleteHealthEntry;
 
 // ЕДИНСТВЕННАЯ ИНИЦИАЛИЗАЦИЯ DATA
-let data = JSON.parse(localStorage.getItem('lifeOSData')) || {
-    tasks: [], // Для старой системы задач, если она будет адаптирована
-    health: [], // Для журнала здоровья
-    healthStats: [],  // Для RPG характеристик здоровья
-    relationships: [], // Для старой системы отношений
-    skills: [], // Для старой системы навыков
-    xp: 0, // Общий XP, связан с верхней панелью
-    level: 1, // Общий уровень, связан с верхней панелью
-    // rimworldInventory: [], // Данные инвентаря теперь в inventoryItems и localStorage.getItem('rimworldInventory')
-    // personaData: {}, // Данные персоны теперь напрямую в localStorage.getItem('personaData')
-    // rimworldPlannerTasks: [] // Задачи планировщика теперь в tasksPlanner и localStorage.getItem('rimworldPlannerTasks')
-};
-
-function saveMainData() { // Новая функция для сохранения основного объекта data
-    try {
-        localStorage.setItem('lifeOSData', JSON.stringify(data));
-        console.log('Основные данные (lifeOSData) успешно сохранены:', data);
-    } catch (e) {
-        console.error('Ошибка при сохранении основных данных lifeOSData:', e);
-    }
-}
 
 function savePersonaData() {
     const personaNameInput = document.getElementById('personaNameInput');
@@ -78,18 +57,21 @@ function savePersonaData() {
         traits: personaTraitsInput.value,
         skills: personaSkillsInput.value,
         equipment: personaEquipmentInput.value,
-        avatar: localStorage.getItem('personaAvatar') || ''
+        avatar: LifePlanner.getData().persona.avatar || '' // Получаем аватар из централизованных данных
     };
-    localStorage.setItem('personaData', JSON.stringify(personaDataToSave));
+    LifePlanner.getData().persona = personaDataToSave;
+    LifePlanner.saveData();
     alert('Данные персонажа сохранены!');
     loadPersonaData();
 }
 
 function loadPersonaData() {
-    const personaDataFromStorage = JSON.parse(localStorage.getItem('personaData'));
+    const personaDataFromStorage = LifePlanner.getData().persona;
+    console.log('Загруженные данные персонажа:', personaDataFromStorage); // Отладочное сообщение
     
     // Определяем имя (из сохраненных данных или пустое)
     const name = personaDataFromStorage?.name || '';
+    console.log('Имя персонажа для отображения:', name); // Отладочное сообщение
 
     // ВСЕГДА обновляем имя во всех местах
     const personaNameInput = document.getElementById('personaNameInput');
@@ -125,7 +107,8 @@ document.getElementById('avatarUpload') && document.getElementById('avatarUpload
     if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            localStorage.setItem('personaAvatar', e.target.result);
+            LifePlanner.getData().persona.avatar = e.target.result;
+            LifePlanner.saveData();
             const avatarDisplay = document.querySelector('#persona .persona-avatar');
             avatarDisplay.style.backgroundImage = `url(${e.target.result})`;
             avatarDisplay.textContent = '';
@@ -135,7 +118,7 @@ document.getElementById('avatarUpload') && document.getElementById('avatarUpload
     }
 });
 
-let inventoryItems = [];
+// Удалена: let inventoryItems = [];
 const inventoryGridContainer = document.getElementById('inventoryGridContainer');
 const MAX_INVENTORY_SLOTS = 20;
 let draggedItem = null;
@@ -147,6 +130,7 @@ function renderInventory() {
         return;
     }
     inventoryGridContainer.innerHTML = '';
+    const inventoryItems = LifePlanner.getData().inventoryItems;
     for (let i = 0; i < MAX_INVENTORY_SLOTS; i++) {
         const cell = document.createElement('div');
         cell.classList.add('inventory-cell');
@@ -170,6 +154,7 @@ function renderInventory() {
 }
 
 function handleDragStart(e) {
+    const inventoryItems = LifePlanner.getData().inventoryItems;
     draggedItem = inventoryItems.find(item => item.slot == this.dataset.slotId);
     if(draggedItem) { // Убедимся, что элемент действительно есть
     e.dataTransfer.effectAllowed = 'move';
@@ -196,6 +181,7 @@ function handleDrop(e) {
     if (!sourceSlotIdText) return; // Если нет ID источника, выходим
     const sourceSlotId = parseInt(sourceSlotIdText);
 
+    const inventoryItems = LifePlanner.getData().inventoryItems;
     if (draggedItem && draggedItem.slot === sourceSlotId && targetSlotId !== sourceSlotId) {
         const targetItem = inventoryItems.find(item => item.slot === targetSlotId);
             const sourceItemIndex = inventoryItems.findIndex(item => item.id === draggedItem.id);
@@ -211,7 +197,7 @@ function handleDrop(e) {
                 inventoryItems[sourceItemIndex].slot = targetSlotId;
             }
         }
-        saveInventory();
+        LifePlanner.saveData(); // Сохраняем через LifePlanner
         renderInventory();
     }
     this.style.opacity = '1';
@@ -224,6 +210,7 @@ function handleDragEnd(e) {
 }
 
 function addItemToInventory(name, quantity = 1, type = 'resources') {
+    const inventoryItems = LifePlanner.getData().inventoryItems;
     if (inventoryItems.length >= MAX_INVENTORY_SLOTS && !inventoryItems.find(i => i.name === name)) {
         alert('Инвентарь полон!');
         return;
@@ -251,93 +238,124 @@ function addItemToInventory(name, quantity = 1, type = 'resources') {
             type: type 
         });
     }
-    saveInventory();
+    LifePlanner.saveData(); // Сохраняем через LifePlanner
     renderInventory();
 }
 
 function addItemToInventoryPrompt() {
-    const name = prompt('Введите название предмета:', 'Пласталь');
-    if (!name) return;
-    const quantityStr = prompt('Введите количество:', '10');
-    const quantity = parseInt(quantityStr);
-    if (isNaN(quantity) || quantity <= 0) {
-        alert('Некорректное количество');
-        return;
+    const itemNameInput = document.getElementById('item-name');
+    const itemQuantityInput = document.getElementById('item-quantity');
+    const itemCategorySelect = document.getElementById('item-category');
+    const itemDescriptionTextarea = document.getElementById('item-description');
+
+    const itemName = itemNameInput.value.trim();
+    const itemQuantity = parseInt(itemQuantityInput.value);
+    const itemCategory = itemCategorySelect.value;
+    const itemDescription = itemDescriptionTextarea.value.trim();
+
+    if (itemName && itemQuantity > 0) {
+        addItemToInventory(itemName, itemQuantity, itemCategory);
+        closeModal();
+        // Очистка формы после добавления
+        itemNameInput.value = '';
+        itemQuantityInput.value = '1';
+        itemCategorySelect.value = 'resources';
+        itemDescriptionTextarea.value = '';
+    } else {
+        alert('Пожалуйста, введите название и количество предмета.');
     }
-    const type = prompt('Введите тип предмета (weapons, apparel, resources, medicine):', 'resources');
-    if (!['weapons', 'apparel', 'resources', 'medicine'].includes(type)) { // убрал 'all'
-        alert('Некорректный тип предмета.');
-        return;
-    }
-    addItemToInventory(name, quantity, type);
 }
 
 function saveInventory() {
-    localStorage.setItem('rimworldInventory', JSON.stringify(inventoryItems));
+    LifePlanner.saveData(); // Сохраняем через LifePlanner
+    alert('Инвентарь сохранен!');
 }
 
 function loadInventory() {
-    const savedInventory = localStorage.getItem('rimworldInventory');
-    if (savedInventory) {
-        inventoryItems = JSON.parse(savedInventory);
-    }
+    const inventoryItems = LifePlanner.getData().inventoryItems;
     renderInventory();
 }
 
-const itemContextMenu = document.getElementById('itemContextMenu');
-
 function handleContextMenu(e) {
     e.preventDefault();
-    contextMenuItem = inventoryItems.find(item => item.slot == this.dataset.slotId);
-    if (!contextMenuItem) return;
-    if (itemContextMenu) {
-    itemContextMenu.style.top = `${e.clientY}px`;
-    itemContextMenu.style.left = `${e.clientX}px`;
-    itemContextMenu.style.display = 'block';
-    document.addEventListener('click', hideContextMenu, { once: true });
+    const contextMenu = document.getElementById('itemContextMenu');
+    const targetCell = e.target.closest('.inventory-cell');
+    if (targetCell && targetCell.dataset.itemId) {
+        contextMenuItem = LifePlanner.getData().inventoryItems.find(item => item.id === targetCell.dataset.itemId);
+        if (contextMenuItem) {
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.top = e.pageY + 'px';
+        }
     } else {
-        console.warn("Контекстное меню 'itemContextMenu' не найдено.");
+        hideContextMenu();
     }
 }
 
 function hideContextMenu() {
-    if (itemContextMenu) itemContextMenu.style.display = 'none';
+    document.getElementById('itemContextMenu').style.display = 'none';
     contextMenuItem = null;
 }
 
 function filterItems(type) {
-    if (!inventoryGridContainer) return;
-    const cells = inventoryGridContainer.querySelectorAll('.inventory-cell');
-    cells.forEach(cell => {
-        const item = inventoryItems.find(i => i.slot == cell.dataset.slotId);
-        if (type === 'all' || !item || (item && item.type === type)) {
-            cell.style.display = 'flex';
-        } else {
-            cell.style.display = 'none';
-        }
+    const inventoryItems = LifePlanner.getData().inventoryItems;
+    const filteredItems = type === 'all' ? inventoryItems : inventoryItems.filter(item => item.type === type);
+    
+    // Очищаем текущий инвентарь
+    inventoryGridContainer.innerHTML = '';
+
+    // Отображаем отфильтрованные предметы
+    filteredItems.forEach(item => {
+        const cell = document.createElement('div');
+        cell.classList.add('inventory-cell');
+        cell.textContent = item.name + (item.quantity > 1 ? ` (x${item.quantity})` : '');
+        cell.draggable = true;
+        cell.dataset.itemId = item.id;
+        cell.dataset.itemType = item.type;
+        cell.dataset.slotId = item.slot; // Добавляем slotId для перетаскивания
+        cell.addEventListener('dragstart', handleDragStart);
+        cell.addEventListener('dragover', handleDragOver);
+        cell.addEventListener('drop', handleDrop);
+        cell.addEventListener('dragend', handleDragEnd);
+        cell.addEventListener('contextmenu', handleContextMenu);
+        inventoryGridContainer.appendChild(cell);
     });
+    // Добавляем пустые ячейки, если их меньше MAX_INVENTORY_SLOTS
+    for (let i = filteredItems.length; i < MAX_INVENTORY_SLOTS; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('inventory-cell');
+        cell.dataset.slotId = i; // Важно для перетаскивания на пустые слоты
+        cell.addEventListener('dragover', handleDragOver);
+        cell.addEventListener('drop', handleDrop);
+        inventoryGridContainer.appendChild(cell);
+    }
+
+    // Обновляем активные кнопки категорий
+    document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`.category-btn[data-category="${type}"]`).classList.add('active');
 }
 
 function deleteContextItem() {
     if (contextMenuItem) {
-        inventoryItems = inventoryItems.filter(item => item.id !== contextMenuItem.id);
-        saveInventory();
-        renderInventory();
+        if (confirm(`Вы уверены, что хотите удалить ${contextMenuItem.name}?`)) {
+            LifePlanner.getData().inventoryItems = LifePlanner.getData().inventoryItems.filter(item => item.id !== contextMenuItem.id);
+            LifePlanner.saveData();
+            renderInventory();
+            hideContextMenu();
+        }
     }
-    hideContextMenu();
 }
 
 function editContextItemName() {
     if (contextMenuItem) {
-        const newName = prompt('Введите новое имя для предмета:', contextMenuItem.name);
-        if (newName && newName.trim() !== '') {
-            const itemIndex = inventoryItems.findIndex(item => item.id === contextMenuItem.id);
-            if (itemIndex !== -1) inventoryItems[itemIndex].name = newName.trim();
-            saveInventory();
+        const newName = prompt('Введите новое название:', contextMenuItem.name);
+        if (newName !== null && newName.trim() !== '') {
+            contextMenuItem.name = newName.trim();
+            LifePlanner.saveData();
             renderInventory();
+            hideContextMenu();
         }
     }
-    hideContextMenu();
 }
 
 // === Планировщик: рабочая инициализация ===
@@ -577,9 +595,10 @@ window.LifePlanner = (function() {
 document.addEventListener('DOMContentLoaded', function() {
     loadPersonaData();
     loadInventory();
-    // Если есть другие функции автозагрузки (например, здоровье), добавить их здесь
+    renderHealthStats();
+    renderHealthLog();
     if (window.LifePlanner && typeof window.LifePlanner.init === 'function') {
-  window.LifePlanner.init();
+        window.LifePlanner.init();
     }
 });
 
@@ -597,6 +616,21 @@ function openTab(event, tabName) {
   if (tabContent) tabContent.classList.add('active');
   // Сделать активной текущую кнопку
   if (event && event.currentTarget) event.currentTarget.classList.add('active');
+
+  // Вызов функций рендеринга в зависимости от открытой вкладки
+  switch (tabName) {
+      case 'persona':
+          loadPersonaData();
+          break;
+      case 'items':
+          loadInventory();
+          break;
+      case 'health_detailed':
+          renderHealthStats();
+          renderHealthLog();
+          break;
+      // Добавьте сюда другие вкладки и соответствующие функции рендеринга
+  }
 }
 window.openTab = openTab;
 
@@ -608,13 +642,73 @@ function closeHealthLogModal() {
   document.getElementById('healthLogModal').style.display = 'none';
 }
 function openScheduleOperationModal() {
-  alert('Окно планирования операции (заглушка)');
+  document.getElementById('scheduleOperationModal').style.display = 'flex';
+}
+function closeScheduleOperationModal() {
+  document.getElementById('scheduleOperationModal').style.display = 'none';
+  // Очистка формы при закрытии модального окна
+  document.getElementById('operationDate').value = '';
+  document.getElementById('operationName').value = '';
+  document.getElementById('operationStatus').value = 'Запланировано';
+  document.getElementById('operationNotes').value = '';
+}
+function saveOperationEntry() {
+  const date = document.getElementById('operationDate').value;
+  const name = document.getElementById('operationName').value.trim();
+  const status = document.getElementById('operationStatus').value;
+  const notes = document.getElementById('operationNotes').value.trim();
+
+  if (!date || !name) {
+      alert('Пожалуйста, заполните дату и название процедуры/операции.');
+      return;
+  }
+
+  const newEntry = {
+      date: date,
+      text: name,
+      status: status,
+      type: 'Операция', // По умолчанию для этого модального окна
+      notes: notes
+  };
+
+  LifePlanner.getData().medicalHistory.push(newEntry);
+  LifePlanner.saveData();
+  renderMedicalHistory();
+  closeScheduleOperationModal();
 }
 function filterHistory(type) {
   alert('Фильтрация истории по: ' + type + ' (заглушка)');
 }
 function addHealthEntry() {
-  alert('Добавить запись о здоровье (заглушка)');
+  const sleepInput = document.getElementById('sleep');
+  const waterInput = document.getElementById('water');
+  const healthNoteInput = document.getElementById('healthNote');
+
+  const sleep = parseFloat(sleepInput.value);
+  const water = parseFloat(waterInput.value);
+  const healthNote = healthNoteInput.value.trim();
+
+  if (isNaN(sleep) || isNaN(water) || sleep < 0 || water < 0) {
+      alert('Пожалуйста, введите корректные значения для сна и воды.');
+      return;
+  }
+
+  const newEntry = {
+      date: new Date().toISOString().split('T')[0], // Сегодняшняя дата в формате YYYY-MM-DD
+      sleep: sleep,
+      water: water,
+      note: healthNote
+  };
+
+  LifePlanner.getData().health.push(newEntry);
+  LifePlanner.saveData();
+  renderHealthLog();
+  closeHealthLogModal();
+
+  // Очистка формы
+  sleepInput.value = '';
+  waterInput.value = '';
+  healthNoteInput.value = '';
 }
 function saveHealthEntry() {
   alert('Сохранить запись о здоровье (заглушка)');
@@ -625,52 +719,422 @@ function filterSocial(type) {
 function interactSocial(name) {
   alert('Взаимодействие с: ' + name + ' (заглушка)');
 }
-function openWorkSubTab(event, subTab) {
-  alert('Открыть под-вкладку работы: ' + subTab + ' (заглушка)');
-}
-function setTaskPriority(task, priority) {
-  alert('Изменить приоритет задачи: ' + task + ' на ' + priority + ' (заглушка)');
-}
-function openAddTaskModal() {
-  alert('Окно добавления задачи (заглушка)');
-}
-function toggleWorkTabTask(taskId) {
-  alert('Тоггл задачи: ' + taskId + ' (заглушка)');
-}
-function addItemToInventoryPrompt() {
-  alert('Добавить предмет в инвентарь (заглушка)');
-}
-function saveInventory() {
-  alert('Сохранить инвентарь (заглушка)');
-}
-function filterItems(type) {
-  alert('Фильтрация предметов по: ' + type + ' (заглушка)');
-}
-function deleteContextItem() {
-  alert('Удалить предмет (заглушка)');
-}
-function editContextItemName() {
-  alert('Переименовать предмет (заглушка)');
-}
-function closeModal() {
-  document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-}
-function openAddHealthStatModal() {
-  document.getElementById('healthStatModal').style.display = 'flex';
-}
-function closeHealthStatModal() {
-  document.getElementById('healthStatModal').style.display = 'none';
-}
-function deleteHealthStat() {
-  alert('Удалить характеристику здоровья (заглушка)');
-}
-function saveHealthStat() {
-  alert('Сохранить характеристику здоровья (заглушка)');
-}
-function deleteHealthEntry() {
-  alert('Удалить запись о здоровье (заглушка)');
+function openWorkSubTab(event, subTabName) {
+    // Скрыть все .work-sub-content
+    document.querySelectorAll('.work-sub-content').forEach(el => el.classList.remove('active'));
+    // Убрать active у всех .work-tab-button
+    document.querySelectorAll('.work-tab-button').forEach(el => el.classList.remove('active'));
+
+    // Показать нужную подвкладку
+    const subTabContent = document.getElementById(subTabName);
+    if (subTabContent) subTabContent.classList.add('active');
+
+    // Сделать активной текущую кнопку
+    if (event && event.currentTarget) event.currentTarget.classList.add('active');
+
+    // Вызов рендеринга при переключении на подвкладку
+    switch(subTabName) {
+        case 'work_tasks':
+            renderWorkTasks();
+            break;
+        case 'work_schedule':
+            renderDailySchedule();
+            break;
+        case 'work_priorities':
+            renderWorkPriorities();
+            break;
+    }
 }
 
-function toggleCompletePlanner() { /* больше не используется, заглушка */ }
+function renderWorkTasks() {
+    const taskList = document.getElementById('taskList');
+    if (!taskList) return;
+
+    taskList.innerHTML = '';
+    const tasks = LifePlanner.getData().tasks; // Используем задачи из LifePlanner
+
+    if (tasks.length === 0) {
+        taskList.innerHTML = '<p style="color: #A89F8D;">Задачи не добавлены.</p>';
+        return;
+    }
+
+    // Отображаем только основные задачи (без подзадач, так как они рендерятся в planner.js)
+    tasks.filter(task => !task.isSubTask).forEach((task, index) => {
+        const li = document.createElement('li');
+        li.style.padding = '0.5rem';
+        li.style.background = '#383838'; // Соответствует .summary-section
+        li.style.borderRadius = '4px';
+        li.style.marginBottom = '0.5rem';
+        li.innerHTML = `
+            ${task.text} (Приоритет: ${task.priority})
+            <button onclick="window.setTaskPriority('${task.id}', 'up')" style="background:#007bff; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">↑</button>
+            <button onclick="window.setTaskPriority('${task.id}', 'down')" style="background:#dc3545; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">↓</button>
+            <button onclick="LifePlanner.deleteTask('${task.id}')" style="background:#6c757d; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Удалить</button>
+        `;
+        taskList.appendChild(li);
+    });
+}
+
+function setTaskPriority(taskId, direction) {
+    const tasks = LifePlanner.getData().tasks;
+    const taskIndex = tasks.findIndex(task => task.id === taskId);
+
+    if (taskIndex === -1) return;
+
+    const task = tasks[taskIndex];
+    let currentPriority = 0;
+    switch (task.priority) {
+        case 'low': currentPriority = 0; break;
+        case 'medium': currentPriority = 1; break;
+        case 'high': currentPriority = 2; break;
+        case 'boss': currentPriority = 3; break;
+    }
+
+    if (direction === 'up') {
+        currentPriority = Math.min(currentPriority + 1, 3); // Макс приоритет 3 (boss)
+    } else if (direction === 'down') {
+        currentPriority = Math.max(currentPriority - 1, 0); // Мин приоритет 0 (low)
+    }
+
+    switch (currentPriority) {
+        case 0: task.priority = 'low'; break;
+        case 1: task.priority = 'medium'; break;
+        case 2: task.priority = 'high'; break;
+        case 3: task.priority = 'boss'; break;
+    }
+
+    LifePlanner.saveData();
+    renderWorkTasks(); // Перерендеринг для обновления приоритетов
+    LifePlanner.renderTasks(); // Обновить задачи в планировщике, если они используют приоритеты
+}
+
+function openAddTaskModal() {
+    // Вместо отдельного модального окна, можно использовать существующий в planner.js
+    // Или, если это модальное окно должно быть другим, его нужно создать в index.html
+    // и реализовать его открытие/закрытие.
+    alert('Используйте вкладку "Планировщик" для добавления задач, или реализуйте отдельное модальное окно здесь.');
+    // Пример открытия модального окна планировщика (если оно глобально доступно):
+    // document.getElementById('task-modal').style.display = 'flex';
+}
+
+function toggleWorkTabTask(taskId) {
+    // Эта функция может быть использована для переключения статуса задачи
+    // Но лучше использовать LifePlanner.toggleCompletePlanner, если задачи синхронизированы
+    const tasks = LifePlanner.getData().tasks;
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+        task.completed = !task.completed;
+        LifePlanner.saveData();
+        renderWorkTasks();
+        LifePlanner.renderTasks(); // Обновить задачи в планировщике
+    } else {
+        alert('Задача не найдена.');
+    }
+}
+
+function renderDailySchedule() {
+    const scheduleContainer = document.getElementById('dailyScheduleContainer');
+    if (!scheduleContainer) return;
+
+    // Очищаем текущее расписание
+    scheduleContainer.innerHTML = '';
+
+    for(let i=0; i<24; i++){
+        let hourBlock = document.createElement('div');
+        hourBlock.style.border = '1px solid #4A4A4A';
+        hourBlock.style.background = '#383838'; // Default background for empty slot
+        hourBlock.title = i + ':00 - ' + (i+1) + ':00 - Свободно';
+        hourBlock.textContent = i.toString().padStart(2, '0');
+        hourBlock.style.fontSize = '10px';
+        hourBlock.style.textAlign = 'center';
+        hourBlock.style.cursor = 'pointer';
+        hourBlock.onclick = () => alert('Назначить задачу на ' + i + ':00');
+        scheduleContainer.appendChild(hourBlock);
+    }
+
+    // Здесь можно добавить логику для загрузки и отображения реальных событий расписания
+    // Например, из LifePlanner.getData().schedule
+    // Временно оставим примеры назначения цветов
+    if(scheduleContainer.children[8]) scheduleContainer.children[8].style.background = '#4A5A6A'; // Work
+    if(scheduleContainer.children[9]) scheduleContainer.children[9].style.background = '#4A5A6A';
+    if(scheduleContainer.children[12]) scheduleContainer.children[12].style.background = '#5A6A4A'; // Recreation
+    if(scheduleContainer.children[22]) scheduleContainer.children[22].style.background = '#202020'; // Sleep
+    if(scheduleContainer.children[23]) scheduleContainer.children[23].style.background = '#202020';
+}
+
+function renderWorkPriorities() {
+    // В index.html сейчас статичный список. Здесь можно реализовать
+    // динамическое отображение и редактирование приоритетов
+    // из LifePlanner.getData().workPriorities (или создать новое поле в data)
+    console.log('Рендеринг приоритетов работы (функционал будет расширен)');
+    // Для примера, можно загрузить и отобразить их:
+    // const prioritiesData = LifePlanner.getData().workPriorities || {};
+    // ...
+}
+
+function renderJournalEvents() {
+    const journalEntryList = document.getElementById('journalEntryList');
+    if (!journalEntryList) return;
+
+    journalEntryList.innerHTML = '';
+    const journalEvents = LifePlanner.getData().journalEvents || []; // Добавим новое поле в data
+
+    if (journalEvents.length === 0) {
+        journalEntryList.innerHTML = '<li style="color: #A89F8D;">Записей в журнале нет.</li>';
+        return;
+    }
+
+    // Сортировка по дате (от новых к старым)
+    const sortedEvents = [...journalEvents].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    sortedEvents.forEach((entry, index) => {
+        const li = document.createElement('li');
+        li.style.borderBottom = '1px dashed #4A4A4A';
+        li.style.paddingBottom = '0.5rem';
+        li.style.marginBottom = '0.5rem';
+        li.style.background = '#383838'; // Соответствует .summary-section
+        li.style.borderRadius = '4px';
+        li.style.padding = '0.5rem';
+        li.innerHTML = `
+            <strong>${entry.time}:</strong> ${entry.text} <span style="color: ${getJournalEventTypeColor(entry.type)};">[${entry.type}]</span>
+            <button onclick="window.editJournalEvent(${index})" style="background:#007bff; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Редактировать</button>
+            <button onclick="window.deleteJournalEvent(${index})" style="background:#dc3545; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Удалить</button>
+        `;
+        journalEntryList.appendChild(li);
+    });
+}
+
+function getJournalEventTypeColor(type) {
+    switch (type) {
+        case 'combat': return 'red';
+        case 'social': return 'blue';
+        case 'work': return 'green';
+        case 'health': return 'orange';
+        case 'misc': return 'gray';
+        default: return 'gray';
+    }
+}
+
+function filterJournalEvents() {
+    const dateFilter = document.getElementById('journalDateFilter').value;
+    const typeFilter = document.getElementById('journalTypeFilter').value;
+    const journalEntryList = document.getElementById('journalEntryList');
+    if (!journalEntryList) return;
+
+    journalEntryList.innerHTML = '';
+    const allEvents = LifePlanner.getData().journalEvents || [];
+
+    const filteredEvents = allEvents.filter(entry => {
+        const matchesDate = dateFilter ? entry.date === dateFilter : true;
+        const matchesType = typeFilter === 'all' ? true : entry.type === typeFilter;
+        return matchesDate && matchesType;
+    });
+
+    if (filteredEvents.length === 0) {
+        journalEntryList.innerHTML = '<li style="color: #A89F8D;">Нет записей, соответствующих фильтру.</li>';
+        return;
+    }
+
+    const sortedEvents = [...filteredEvents].sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+
+    sortedEvents.forEach((entry, index) => {
+        const li = document.createElement('li');
+        li.style.borderBottom = '1px dashed #4A4A4A';
+        li.style.paddingBottom = '0.5rem';
+        li.style.marginBottom = '0.5rem';
+        li.style.background = '#383838';
+        li.style.borderRadius = '4px';
+        li.style.padding = '0.5rem';
+        li.innerHTML = `
+            <strong>${entry.time}:</strong> ${entry.text} <span style="color: ${getJournalEventTypeColor(entry.type)};">[${entry.type}]</span>
+            <button onclick="window.editJournalEvent(${index})" style="background:#007bff; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Редактировать</button>
+            <button onclick="window.deleteJournalEvent(${index})" style="background:#dc3545; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Удалить</button>
+        `;
+        journalEntryList.appendChild(li);
+    });
+}
+
+function editJournalEvent(index) {
+    alert('Редактировать запись журнала (заглушка)'); // TODO: Реализовать редактирование
+}
+
+function deleteJournalEvent(index) {
+    if (confirm('Вы уверены, что хотите удалить эту запись журнала?')) {
+        LifePlanner.getData().journalEvents.splice(index, 1);
+        LifePlanner.saveData();
+        renderJournalEvents();
+    }
+}
+
+function renderMedicalHistory() {
+    const medicalHistoryList = document.getElementById('medicalHistoryList');
+    if (!medicalHistoryList) return;
+
+    medicalHistoryList.innerHTML = '';
+    const medicalHistory = LifePlanner.getData().medicalHistory || []; // Добавим новое поле в data
+
+    if (medicalHistory.length === 0) {
+        medicalHistoryList.innerHTML = '<li style="color: #A89F8D;">Записей в истории нет.</li>';
+        return;
+    }
+
+    const sortedHistory = [...medicalHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    sortedHistory.forEach((entry, index) => {
+        const li = document.createElement('li');
+        li.style.borderBottom = '1px dashed #4A4A4A';
+        li.style.paddingBottom = '0.5rem';
+        li.style.marginBottom = '0.5rem';
+        li.style.background = '#383838'; // Соответствует .summary-section
+        li.style.borderRadius = '4px';
+        li.style.padding = '0.5rem';
+        li.innerHTML = `
+            <strong>Дата: ${entry.date}</strong> - ${entry.text}. Статус: ${entry.status}. <span style="color: ${getMedicalHistoryTypeColor(entry.type)};">[${entry.type}]</span>
+            <button onclick="window.editMedicalHistoryEntry(${index})" style="background:#007bff; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Редактировать</button>
+            <button onclick="window.deleteMedicalHistoryEntry(${index})" style="background:#dc3545; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Удалить</button>
+        `;
+        medicalHistoryList.appendChild(li);
+    });
+}
+
+function getMedicalHistoryTypeColor(type) {
+    switch (type) {
+        case 'Операция': return 'purple';
+        case 'Лечение': return 'green';
+        case 'Болезнь': return 'orange';
+        case 'Травма': return 'red';
+        default: return 'gray';
+    }
+}
+
+function filterHistory(typeFilter) {
+    const medicalHistoryList = document.getElementById('medicalHistoryList');
+    if (!medicalHistoryList) return;
+
+    medicalHistoryList.innerHTML = '';
+    const allHistory = LifePlanner.getData().medicalHistory || [];
+
+    const filteredHistory = allHistory.filter(entry => {
+        return typeFilter === 'all' ? true : entry.type === typeFilter;
+    });
+
+    if (filteredHistory.length === 0) {
+        medicalHistoryList.innerHTML = '<li style="color: #A89F8D;">Нет записей, соответствующих фильтру.</li>';
+        return;
+    }
+
+    const sortedHistory = [...filteredHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    sortedHistory.forEach((entry, index) => {
+        const li = document.createElement('li');
+        li.style.borderBottom = '1px dashed #4A4A4A';
+        li.style.paddingBottom = '0.5rem';
+        li.style.marginBottom = '0.5rem';
+        li.style.background = '#383838';
+        li.style.borderRadius = '4px';
+        li.style.padding = '0.5rem';
+        li.innerHTML = `
+            <strong>Дата: ${entry.date}</strong> - ${entry.text}. Статус: ${entry.status}. <span style="color: ${getMedicalHistoryTypeColor(entry.type)};">[${entry.type}]</span>
+            <button onclick="window.editMedicalHistoryEntry(${index})" style="background:#007bff; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Редактировать</button>
+            <button onclick="window.deleteMedicalHistoryEntry(${index})" style="background:#dc3545; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Удалить</button>
+        `;
+        medicalHistoryList.appendChild(li);
+    });
+}
+
+function editMedicalHistoryEntry(index) {
+    alert('Редактировать запись истории болезни (заглушка)'); // TODO: Реализовать редактирование
+}
+
+function deleteMedicalHistoryEntry(index) {
+    if (confirm('Вы уверены, что хотите удалить эту запись из истории болезней?')) {
+        LifePlanner.getData().medicalHistory.splice(index, 1);
+        LifePlanner.saveData();
+        renderMedicalHistory();
+    }
+}
+
+// Обновляем window.addEventListener('DOMContentLoaded')
+document.addEventListener('DOMContentLoaded', function() {
+    loadPersonaData();
+    loadInventory();
+    renderHealthStats();
+    renderHealthLog();
+    renderRelationships();
+    renderSkills();
+    renderWorkTasks(); // Добавляем рендеринг задач при загрузке
+    renderWorkPriorities(); // Добавляем рендеринг приоритетов при загрузке
+    renderDailySchedule(); // Добавляем рендеринг расписания при загрузке
+    renderJournalEvents(); // Добавляем рендеринг журнала при загрузке
+    renderMedicalHistory(); // Добавляем рендеринг истории болезней при загрузке
+
+    if (window.LifePlanner && typeof window.LifePlanner.init === 'function') {
+        window.LifePlanner.init();
+        LifePlanner.updateFromStorage(); // Обновить данные при запуске
+    }
+});
+
+// Обновляем функцию openTab для вызова функций рендеринга
+function openTab(event, tabName) {
+  // Скрыть все .content
+  document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
+  // Убрать active у всех .tab
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  // Показать нужную вкладку
+  const tabContent = document.getElementById(tabName);
+  if (tabContent) tabContent.classList.add('active');
+  // Сделать активной текущую кнопку
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+
+  // Вызов функций рендеринга в зависимости от открытой вкладки
+  switch (tabName) {
+      case 'persona':
+          loadPersonaData();
+          break;
+      case 'items':
+          loadInventory();
+          break;
+      case 'health_detailed':
+          renderHealthStats();
+          renderHealthLog();
+          break;
+      case 'social':
+          renderRelationships();
+          filterSocial('all'); // Показать все отношения по умолчанию
+          break;
+      case 'skills':
+          renderSkills();
+          break;
+      case 'work':
+          // По умолчанию открываем подвкладку задач
+          openWorkSubTab(null, 'work_tasks');
+          renderWorkTasks();
+          renderWorkPriorities();
+          break;
+      case 'journal':
+          renderJournalEvents();
+          break;
+      case 'procedures_history':
+          renderMedicalHistory();
+          break;
+      // Добавьте сюда другие вкладки и соответствующие функции рендеринга
+  }
+}
+
+// Обновляем список экспортируемых функций, чтобы включить новые или измененные
+window.openWorkSubTab = openWorkSubTab;
+window.setTaskPriority = setTaskPriority;
+window.openAddTaskModal = openAddTaskModal;
+window.toggleWorkTabTask = toggleWorkTabTask;
+
+window.renderJournalEvents = renderJournalEvents;
+window.filterJournalEvents = filterJournalEvents;
+window.editJournalEvent = editJournalEvent;
+window.deleteJournalEvent = deleteJournalEvent;
+
+window.renderMedicalHistory = renderMedicalHistory;
+window.filterHistory = filterHistory;
+window.editMedicalHistoryEntry = editMedicalHistoryEntry;
+window.deleteMedicalHistoryEntry = deleteMedicalHistoryEntry;
 
 
