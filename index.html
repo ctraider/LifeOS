@@ -1226,34 +1226,34 @@
                 <h3>Голод</h3>
                 <progress id="needHunger" value="70" max="100" style="width: 100%;"></progress>
                 <p>Состояние: <span id="hungerStatus">Удовлетворен</span></p>
-            </div>
+                    </div>
             <div class="need-item" style="padding: 1rem; background: #e9ecef; border-radius: 8px;">
                 <h3>Отдых</h3>
                 <progress id="needRest" value="80" max="100" style="width: 100%;"></progress>
                 <p>Состояние: <span id="restStatus">Отдохнувший</span></p>
-            </div>
+                </div>
             <div class="need-item" style="padding: 1rem; background: #e9ecef; border-radius: 8px;">
                 <h3>Развлечение</h3>
                 <progress id="needRecreation" value="60" max="100" style="width: 100%;"></progress>
                 <p>Состояние: <span id="recreationStatus">Нуждается в развлечениях</span></p>
-            </div>
+                    </div>
             <div class="need-item" style="padding: 1rem; background: #e9ecef; border-radius: 8px;">
                 <h3>Красота</h3>
                 <progress id="needBeauty" value="50" max="100" style="width: 100%;"></progress>
                 <p>Состояние: <span id="beautyStatus">Равнодушен</span></p>
-            </div>
+                </div>
             <div class="need-item" style="padding: 1rem; background: #e9ecef; border-radius: 8px;">
                 <h3>Комфорт</h3>
                 <progress id="needComfort" value="75" max="100" style="width: 100%;"></progress>
                 <p>Состояние: <span id="comfortStatus">Комфортно</span></p>
-            </div>
+                    </div>
             <div class="need-item" style="padding: 1rem; background: #e9ecef; border-radius: 8px;">
                 <h3>Пространство</h3>
                 <progress id="needSpace" value="90" max="100" style="width: 100%;"></progress>
                 <p>Состояние: <span id="spaceStatus">Просторно</span></p>
+                </div>
             </div>
         </div>
-    </div>
 
     <!-- Здоровье (Детально) -->
     <div id="health_detailed" class="content">
@@ -1263,7 +1263,7 @@
             <p><strong>Травмы:</strong> <span id="injuriesCount">0</span></p>
             <p><strong>Болезни:</strong> <span id="illnessesCount">0</span></p>
             <button onclick="window.openHealthLogModal()" style="margin-top: 0.5rem;">Добавить запись о здоровье</button>
-        </div>
+                    </div>
 
         <!-- Добавляем контейнер для RPG статов здоровья -->
         <div class="health-section" style="margin-bottom: 1rem;">
@@ -1271,16 +1271,16 @@
             <button onclick="window.openAddHealthStatModal()" style="margin-bottom: 1rem;">Добавить характеристику</button>
             <div id="health-stats-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                 <!-- Характеристики будут загружены из script.js (renderHealthStats) -->
-            </div>
-        </div>
+                </div>
+                    </div>
 
         <!-- Добавляем контейнер для записей журнала здоровья -->
         <div class="health-section" style="margin-bottom: 1rem;">
             <h3>Журнал здоровья</h3>
             <div id="healthList" style="display: flex; flex-direction: column; gap: 0.5rem;">
                 <!-- Записи будут загружены из script.js (renderHealth) -->
-            </div>
-        </div>
+                </div>
+                    </div>
 
         <div class="health-section" style="margin-bottom: 1rem;">
             <h3>Части Тела</h3>
@@ -1292,7 +1292,7 @@
                 <li style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px;">Левая нога: <span style="color: green;">100%</span></li>
                 <li style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px;">Правая нога: <span style="color: green;">100%</span></li>
             </ul>
-        </div>
+                </div>
 
         <div class="health-section">
             <h3>Операции и Медицинские Процедуры</h3>
@@ -1312,7 +1312,7 @@
             <button onclick="window.filterSocial('family')">Семья</button>
             <button onclick="window.filterSocial('colleagues')">Коллеги</button>
             <button onclick="window.filterSocial('enemies')">Враги</button>
-        </div>
+                    </div>
         <div id="socialListContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
             <!-- Пример записи -->
             <div class="social-entry" style="padding: 1rem; background: #e9ecef; border-radius: 8px;">
@@ -1320,15 +1320,15 @@
                 <p><strong>Отношение:</strong> +75</p>
                 <p><strong>Последний контакт:</strong> 2 дня назад</p>
                 <button onclick="window.interactSocial('Elena')">Взаимодействовать</button>
-            </div>
+                </div>
             <div class="social-entry" style="padding: 1rem; background: #e9ecef; border-radius: 8px;">
                 <p><strong>Имя:</strong> Виктор <span style="color: red;">(Враг)</span></p>
                 <p><strong>Отношение:</strong> -50</p>
                 <p><strong>Последний контакт:</strong> 1 неделя назад</p>
                 <button onclick="window.interactSocial('Viktor')">Взаимодействовать</button>
-            </div>
-        </div>
-    </div>
+                    </div>
+                </div>
+                    </div>
 
     <!-- Работа -->
     <div id="work" class="content">
@@ -1337,7 +1337,7 @@
             <button onclick="window.openWorkSubTab(event, 'work_tasks')" class="work-tab-button active">Задачи</button>
             <button onclick="window.openWorkSubTab(event, 'work_schedule')" class="work-tab-button">Расписание</button>
             <button onclick="window.openWorkSubTab(event, 'work_priorities')" class="work-tab-button">Приоритеты</button>
-        </div>
+                </div>
 
         <div id="work_tasks" class="work-sub-content active">
             <h3>Задачи</h3>
@@ -1346,7 +1346,7 @@
                 <li style="padding: 0.5rem; background: #e9ecef; border-radius: 4px; margin-bottom: 0.5rem;">Построить стену (Приоритет: 1) <button onclick="window.setTaskPriority('wall', 2)">↑</button> <button onclick="window.setTaskPriority('wall', 0)">↓</button></li>
                 <li style="padding: 0.5rem; background: #e9ecef; border-radius: 4px; margin-bottom: 0.5rem;">Исследовать технологию X (Приоритет: 2) <button onclick="window.setTaskPriority('research', 3)">↑</button> <button onclick="window.setTaskPriority('research', 1)">↓</button></li>
             </ul>
-        </div>
+                    </div>
 
         <div id="work_schedule" class="work-sub-content">
             <h3>Расписание Дня</h3>
@@ -1375,8 +1375,8 @@
                         if(scheduleContainer.children[23]) scheduleContainer.children[23].style.background = 'darkgrey';
                     }
                 </script>
+                </div>
             </div>
-        </div>
 
         <div id="work_priorities" class="work-sub-content">
             <h3>Приоритеты Работ</h3>
@@ -1392,7 +1392,7 @@
                 <li>Переноска: <input type="number" value="4" min="0" max="4" style="width: 50px;"></li>
             </ul>
         </div>
-    </div>
+                    </div>
 
     <!-- Вещи (бывший Инвентарь) -->
     <div id="items" class="content">
@@ -1403,10 +1403,10 @@
           <button class="category-btn" data-category="clothing">Одежда</button>
           <button class="category-btn" data-category="resources">Ресурсы</button>
           <button class="category-btn" data-category="medications">Медикаменты</button>
-      </div>
+                </div>
       <div id="inventory-list">
           <!-- Предметы будут отображаться здесь -->
-      </div>
+                    </div>
       <p>Перетащите предмет между ячейками. Правый клик для опций.</p>
       
       <!-- Всплывающее окно для добавления предмета -->
@@ -1425,17 +1425,17 @@
           <label>Описание: <textarea id="item-description"></textarea></label><br>
           <button id="save-item-btn">Сохранить</button>
           <button id="cancel-item-btn">Отмена</button>
-      </div>
+                </div>
       <div id="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;"></div>
         <div class="inventory-grid" id="inventoryGridContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; padding: 10px; background: #2A2A2A; border-radius: 4px; min-height: 200px; border: 1px solid #4A4A4A;">
             <!-- Ячейки инвентаря будут генерироваться JavaScript -->
-        </div>
+                    </div>
         <div id="itemContextMenu" class="context-menu" style="display:none; position:absolute; background:#383838; border:1px solid #5A5A5A; border-radius:3px; padding:5px; z-index:1000;">
             <button onclick="window.deleteContextItem()">Удалить</button>
             <button onclick="window.editContextItemName()">Переименовать</button>
-        </div>
+                </div>
         <div style="margin-top:1rem;text-align:center;color:#A89F8D;">Перетащите предмет между ячейками. Правый клик для опций.</div>
-    </div>
+            </div>
 
     <!-- Журнал -->
     <div id="journal" class="content">
@@ -1471,14 +1471,14 @@
             <button onclick="window.filterHistory('treatments')">Лечение</button>
             <button onclick="window.filterHistory('illnesses')">Болезни</button>
             <button onclick="window.filterHistory('injuries')">Травмы</button>
-        </div>
+                    </div>
         <ul id="medicalHistoryList" style="list-style: none; padding-left: 0; max-height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 0.5rem; border-radius: 4px; background: #f8f9fa;">
             <!-- Пример записи -->
             <li style="border-bottom: 1px dashed #ddd; padding-bottom: 0.5rem; margin-bottom: 0.5rem;"><strong>Дата: 2025-05-10</strong> - Операция: Удаление аппендикса. Статус: Успешно. <span style="color: purple;">[Операция]</span></li>
             <li style="border-bottom: 1px dashed #ddd; padding-bottom: 0.5rem; margin-bottom: 0.5rem;"><strong>Дата: 2025-04-22</strong> - Болезнь: Грипп. Лечение: Постельный режим, медикаменты. Статус: Выздоровел. <span style="color: orange;">[Болезнь]</span></li>
             <li style="padding-bottom: 0.5rem; margin-bottom: 0.5rem;"><strong>Дата: 2025-03-15</strong> - Травма: Перелом левой руки. Лечение: Гипс. Статус: Зажило. <span style="color: red;">[Травма]</span></li>
         </ul>
-    </div>
+                </div>
 
     <!-- Планировщик -->
     <div id="planner" class="content">
@@ -1491,20 +1491,20 @@
             <input type="number" id="virtual-currency-input" placeholder="Введите сумму" min="0" class="planner-input">
             <button id="convert-currency-btn" class="planner-btn planner-btn-primary">Конвертировать (10:1)</button>
             <div id="currency-result" class="planner-result-box"></div>
-          </div>
+                    </div>
           <div class="planner-conversion-history">
             <h3>История конвертаций</h3>
             <div id="conversion-list"></div>
             <button id="clear-history" class="planner-btn planner-btn-secondary" style="margin-top: 10px; width: 100%;">Очистить историю</button>
-          </div>
+                </div>
           <div class="planner-progress-container">
             <input type="number" id="savings-goal" placeholder="Установить цель (в рублях)" min="1" class="planner-input">
             <div class="planner-progress-bar">
               <div class="planner-progress-fill" id="progress-fill" style="width: 0%;"></div>
-            </div>
+                    </div>
             <p class="planner-progress-text" id="progress-text">0% (0 / 0 руб.)</p>
-          </div>
-        </div>
+                </div>
+            </div>
         <!-- Основное содержимое -->
         <div class="planner-main-content">
           <div class="planner-center-content">
@@ -1529,27 +1529,27 @@
                 </select>
                 <input type="date" id="due-date" title="Дедлайн (необязательно)" aria-label="Дата дедлайна" class="planner-input">
                 <button id="add-task" aria-label="Добавить задачу" class="planner-btn planner-btn-primary">Добавить</button>
-              </div>
+        </div>
               <ul id="task-list" class="planner-task-list"></ul>
               <div class="planner-filters">
                 <button id="show-all" aria-label="Показать все задачи" class="planner-btn planner-btn-secondary">Показать все</button>
                 <button id="show-active" aria-label="Показать активные задачи" class="planner-btn planner-btn-blue">Активные</button>
                 <button id="show-completed" aria-label="Показать выполненные задачи" class="planner-btn planner-btn-green">Выполненные</button>
-              </div>
+                    </div>
               <div class="planner-gamification">
                 <h2>Геймификация</h2>
                 <p>Уровень: <span id="level">1</span></p>
                 <p>Опыт (XP): <span id="xp">0</span></p>
                 <p>Виртуальная валюта: <span id="currency">0</span></p>
                 <p>Здоровье (HP): <span id="hp">100</span></p>
-              </div>
+                </div>
               <div class="planner-stats">
                 <p>Всего задач (только основные): <span id="total-tasks">0</span></p>
                 <p>Выполнено (основных): <span id="completed-tasks">0</span></p>
                 <p>Активных (основных): <span id="active-tasks">0</span></p>
-              </div>
+                    </div>
+                </div>
             </div>
-          </div>
           <!-- Календарь и достижения -->
           <div class="planner-right-sidebar">
             <div class="planner-calendar-sidebar">
@@ -1591,7 +1591,7 @@
             <ul id="modal-task-list"></ul>
           </div>
         </div>
-      </div>
+        </div>
     </div>
 
     <!-- Модальное окно для журнала здоровья -->
@@ -1602,18 +1602,18 @@
             <div class="form-group" style="margin-bottom:15px;">
                 <label for="sleep">Сон (часов):</label>
                 <input type="number" id="sleep" min="0" max="24" step="0.5" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
-            </div>
+                    </div>
             <div class="form-group" style="margin-bottom:15px;">
                 <label for="water">Вода (литров):</label>
                 <input type="number" id="water" min="0" max="10" step="0.1" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
-            </div>
+                </div>
             <div class="form-group" style="margin-bottom:15px;">
                 <label for="healthNote">Заметка:</label>
                 <textarea id="healthNote" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;min-height:100px;"></textarea>
-            </div>
+                    </div>
             <button onclick="window.addHealthEntry()" style="background:#4CAF50;color:white;padding:10px 15px;border:none;border-radius:5px;cursor:pointer;width:100%;">Сохранить запись</button>
-        </div>
-    </div>
+                </div>
+                    </div>
 
     <!-- Модальное окно для добавления/редактирования RPG характеристик здоровья -->
     <div class="modal" id="healthStatModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:100;justify-content:center;align-items:center;">
@@ -1624,7 +1624,7 @@
             <div class="form-group" style="margin-bottom:15px;">
                 <label for="statName">Название:</label>
                 <input type="text" id="statName" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
-            </div>
+                </div>
             <div class="form-group" style="margin-bottom:15px;">
                 <label for="statValue">Значение:</label>
                 <input type="text" id="statValue" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
@@ -1632,7 +1632,7 @@
             <div class="form-group" style="margin-bottom:15px;">
                 <label for="statUnit">Единица измерения:</label>
                 <input type="text" id="statUnit" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
-            </div>
+        </div>
             <div class="form-group" style="margin-bottom:15px;">
                 <label for="statCategory">Категория:</label>
                 <select id="statCategory" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
@@ -1643,14 +1643,14 @@
                     <option value="Травмы/Болезни">Травмы/Болезни</option>
                     <option value="Другое">Другое</option>
                 </select>
-            </div>
+                    </div>
             <div class="form-group" style="margin-bottom:15px;">
                 <label for="statComment">Комментарий:</label>
                 <textarea id="statComment" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;min-height:60px;"></textarea>
-            </div>
+                </div>
             <button onclick="window.saveHealthStat()" style="background:#4CAF50;color:white;padding:10px 15px;border:none;border-radius:5px;cursor:pointer;width:100%;">Сохранить характеристику</button>
-        </div>
-    </div>
+                    </div>
+                </div>
 
     <!-- Отношения -->
     <div id="relationships" class="content">
@@ -1659,9 +1659,9 @@
             <input type="text" id="relationshipName" placeholder="Имя">
             <input type="date" id="nextContact">
             <button onclick="window.addRelationship()">Добавить</button>
-        </div>
+            </div>
         <div id="relationshipList"></div>
-    </div>
+        </div>
 
     <!-- Навыки -->
     <div id="skills" class="content">
@@ -1683,6 +1683,35 @@
         <h2>Инвентарь</h2>
         <div id="inventoryGrid" style="display:grid;grid-template-columns:repeat(6,60px);gap:12px;max-width:400px;margin:2rem auto 0 auto;"></div>
         <div style="margin-top:2rem;text-align:center;color:#888;">Перетащите предмет между ячейками</div>
+                </div>
+
+    <!-- Модальное окно для планирования операции -->
+    <div class="modal" id="scheduleOperationModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:100;justify-content:center;align-items:center;">
+        <div class="modal-content" style="background:#ffffff;padding:20px;border-radius:10px;max-width:500px;width:100%;position:relative;">
+            <span class="close-button" onclick="window.closeScheduleOperationModal()" style="position:absolute;top:10px;right:15px;font-size:24px;cursor:pointer;">&times;</span>
+            <h3 style="margin-top:0;">Запланировать операцию/процедуру</h3>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label for="operationDate">Дата:</label>
+                <input type="date" id="operationDate" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label for="operationName">Название процедуры/операции:</label>
+                <input type="text" id="operationName" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label for="operationStatus">Статус:</label>
+                <select id="operationStatus" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
+                    <option value="Запланировано">Запланировано</option>
+                    <option value="Выполнено">Выполнено</option>
+                    <option value="Отменено">Отменено</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label for="operationNotes">Заметки:</label>
+                <textarea id="operationNotes" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;min-height:100px;"></textarea>
+            </div>
+            <button onclick="window.saveOperationEntry()" style="background:#4CAF50;color:white;padding:10px 15px;border:none;border-radius:5px;cursor:pointer;width:100%;">Сохранить</button>
+        </div>
     </div>
 
     <script src="script.js"></script>
@@ -1954,7 +1983,7 @@
          onclick="toggleChatCollapse()">
       <span>Помощник</span>
       <span id="chat-toggle-icon" style="font-size: 14px; user-select: none;">▼</span>
-    </div>
+                </div>
     <div id="chat-messages" style="height: 200px; overflow-y: auto; padding: 10px; font-size: 14px;">
       <!-- сюда будут падать сообщения -->
     </div>
