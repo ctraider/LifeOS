@@ -10,22 +10,70 @@ window.LifePlanner = (function() {
     hp: 100,
     achievements: [],
     conversions: [],
-    savingsGoal: 0
+    savingsGoal: 0,
+    health: [], // Для журнала здоровья
+    healthStats: [],  // Для RPG характеристик здоровья
+    relationships: [], // Для системы отношений
+    skills: [], // Для системы навыков
+    persona: {}, // Для данных персоны
+    inventoryItems: [], // Для данных инвентаря
+    journalEvents: [], // Для журнала событий
+    medicalHistory: [] // Для истории болезней
   };
   data.tasks = data.tasks || [];
   data.achievements = data.achievements || [];
   data.conversions = data.conversions || [];
+  data.health = data.health || [];
+  data.healthStats = data.healthStats || [];
+  data.relationships = data.relationships || [];
+  data.skills = data.skills || [];
+  data.persona = data.persona || {};
+  data.inventoryItems = data.inventoryItems || [];
+  data.journalEvents = data.journalEvents || [];
+  data.medicalHistory = data.medicalHistory || [];
   let filterCompleted = null;
   let currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
 
   // --- Служебные функции ---
   function saveData() {
-    localStorage.setItem('lifeOSData', JSON.stringify(data));
+    try {
+        localStorage.setItem('lifeOSData', JSON.stringify(data));
+        console.log('Основные данные (lifeOSData) успешно сохранены:', data);
+    } catch (e) {
+        console.error('Ошибка при сохранении основных данных lifeOSData:', e);
+    }
+  }
+
+  function getData() {
+    return data;
   }
   function updateFromStorage() {
     const d = JSON.parse(localStorage.getItem('lifeOSData'));
     if (d) data = d;
+
+    // Обновляем инвентарь отдельно, так как он ранее хранился по другому ключу
+    const storedInventory = localStorage.getItem('rimworldInventory');
+    if (storedInventory) {
+      try {
+        data.inventoryItems = JSON.parse(storedInventory);
+        localStorage.removeItem('rimworldInventory'); // Удаляем старый ключ
+        saveData(); // Сохраняем объединенные данные
+      } catch (e) {
+        console.error('Ошибка при парсинге rimworldInventory:', e);
+      }
+    }
+    // Обновляем персональные данные отдельно
+    const storedPersona = localStorage.getItem('personaData');
+    if (storedPersona) {
+      try {
+        data.persona = JSON.parse(storedPersona);
+        localStorage.removeItem('personaData'); // Удаляем старый ключ
+        saveData(); // Сохраняем объединенные данные
+      } catch (e) {
+        console.error('Ошибка при парсинге personaData:', e);
+      }
+    }
   }
   window.addEventListener('storage', function(e) {
     if (e.key === 'lifeOSData') {
@@ -668,6 +716,14 @@ window.LifePlanner = (function() {
     data.tasks = data.tasks || [];
     data.achievements = data.achievements || [];
     data.conversions = data.conversions || [];
+    data.health = data.health || [];
+    data.healthStats = data.healthStats || [];
+    data.relationships = data.relationships || [];
+    data.skills = data.skills || [];
+    data.persona = data.persona || {};
+    data.inventoryItems = data.inventoryItems || [];
+    data.journalEvents = data.journalEvents || [];
+    data.medicalHistory = data.medicalHistory || [];
     // Навешиваем обработчики событий только после загрузки DOM
     const addTaskButton = document.getElementById('add-task');
     const newTaskInput = document.getElementById('new-task');
@@ -718,6 +774,9 @@ window.LifePlanner = (function() {
     init,
     addTask,
     renderTasks,
+    saveData,
+    getData,
+    updateFromStorage,
     // ... (остальные публичные методы)
   };
 })();
