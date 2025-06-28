@@ -89,21 +89,227 @@
             margin-top: 0.25rem;
         }
 
+        /* Новая система XP прогресс-бара */
+        .xp-container {
+            position: relative;
+            margin: 0.5rem 0;
+        }
+
+        .xp-bar-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
         .xp-bar {
             width: 100%;
-            height: 10px;
-            background: #4A4A4A; /* Darker background for XP bar */
-            border-radius: 2px;
-            overflow: hidden;
-            margin: 0.5rem 0;
-            border: 1px solid #1A1A1A;
+            height: 16px;
+            background: linear-gradient(135deg, #2A2A2A 0%, #3A3A3A 50%, #2A2A2A 100%);
+            border-radius: 8px;
+            overflow: visible;
+            border: 2px solid #1A1A1A;
+            box-shadow: 
+                inset 0 2px 4px rgba(0,0,0,0.3),
+                0 1px 2px rgba(255,255,255,0.1);
+            position: relative;
         }
 
         .xp-progress {
             height: 100%;
             width: 0%;
-            background: #7A6A53; /* Muted gold/brown for progress */
-            transition: width 0.3s;
+            background: linear-gradient(135deg, 
+                #D4AF37 0%,    /* Золотой */
+                #FFD700 35%,   /* Яркое золото */
+                #FFA500 70%,   /* Оранжевый */
+                #FF8C00 100%   /* Темно-оранжевый */
+            );
+            border-radius: 6px;
+            position: relative;
+            transition: width 0.5s ease-out;
+            box-shadow: 
+                0 0 10px rgba(255, 215, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            overflow: visible;
+        }
+
+        .xp-progress::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255,255,255,0.3) 50%, 
+                transparent 100%
+            );
+            border-radius: 6px;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .xp-segments {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .xp-segment {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: rgba(26, 26, 26, 0.8);
+            box-shadow: 1px 0 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .xp-glow {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, 
+                rgba(255, 215, 0, 0.3) 0%, 
+                rgba(255, 165, 0, 0.2) 100%
+            );
+            filter: blur(4px);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .xp-progress:hover + .xp-glow,
+        .xp-bar:hover .xp-glow {
+            opacity: 1;
+        }
+
+        /* Подсказка для XP системы */
+        .xp-tooltip {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(26, 26, 26, 0.95);
+            color: #D1C7B7;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #4A4A4A;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            min-width: 280px;
+            margin-top: 8px;
+        }
+
+        .xp-tooltip::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-bottom-color: rgba(26, 26, 26, 0.95);
+        }
+
+        .xp-bar-wrapper:hover .xp-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(4px);
+        }
+
+        .tooltip-content h4 {
+            margin: 0 0 8px 0;
+            color: #FFD700;
+            font-size: 14px;
+            font-weight: bold;
+            border-bottom: 1px solid #4A4A4A;
+            padding-bottom: 4px;
+        }
+
+        .tooltip-content p {
+            margin: 4px 0;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .tooltip-content hr {
+            border: none;
+            border-top: 1px solid #4A4A4A;
+            margin: 8px 0;
+        }
+
+        .tooltip-content strong {
+            color: #E1D7C7;
+        }
+
+        /* Анимации для XP уведомлений */
+        @keyframes xpSlideIn {
+            0% {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes xpSlideOut {
+            0% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .xp-notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: linear-gradient(135deg, #D4AF37, #FFD700);
+            color: #000;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.6);
+            z-index: 10000;
+            font-weight: bold;
+            text-align: center;
+            border: 2px solid #B8860B;
+            min-width: 120px;
+        }
+
+        .xp-notification .xp-gain {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .xp-notification .level-up {
+            font-size: 14px;
+            color: #8B0000;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+            animation: pulse 0.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(1.1);
+            }
         }
 
         #themeToggle {
@@ -1751,4 +1957,529 @@
 
         .placeholder-text {
             color: #A89F8D;
-        } 
+        }
+
+        /* ================= RPG ОБЗОР СТИЛИ ================= */
+        .rpg-overview-container {
+            display: grid;
+            grid-template-columns: 300px 1fr 250px;
+            gap: 20px;
+            padding: 20px;
+            min-height: 600px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Анимированный фон */
+        .rpg-overview-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255, 255, 0, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Левая панель - персонаж */
+        .rpg-character-panel {
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.3),
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .rpg-avatar-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .rpg-avatar-frame {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .rpg-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+            border: 3px solid #00ffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #00ffff;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 255, 0.5),
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .rpg-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 
+                0 0 40px rgba(0, 255, 255, 0.7),
+                inset 0 0 30px rgba(0, 255, 255, 0.2);
+        }
+
+        .rpg-level-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: linear-gradient(145deg, #ff6b35, #f9ca24);
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 14px;
+            box-shadow: 0 0 15px rgba(255, 107, 53, 0.5);
+        }
+
+        .rpg-character-name {
+            color: #00ffff;
+            font-size: 24px;
+            margin: 0 0 5px 0;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            font-weight: bold;
+        }
+
+        .rpg-class-title {
+            color: #cccccc;
+            font-size: 14px;
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+
+        /* XP бар */
+        .rpg-xp-section {
+            margin-bottom: 20px;
+        }
+
+        .rpg-xp-label {
+            color: #ffffff;
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .rpg-xp-bar {
+            position: relative;
+            background: #1a1a1a;
+            border: 2px solid #444444;
+            border-radius: 10px;
+            height: 25px;
+            overflow: hidden;
+        }
+
+        .rpg-xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #7A6A53, #f9ca24);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(249, 202, 36, 0.5);
+        }
+
+        .rpg-xp-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Быстрые характеристики */
+        .rpg-quick-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .rpg-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .rpg-stat-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        .rpg-stat-item i {
+            color: #00ffff;
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .rpg-stat-label {
+            color: #cccccc;
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .rpg-stat-value {
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* Центральная панель */
+        .rpg-main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .rpg-section-title {
+            color: #00ffff;
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .rpg-section-title i {
+            margin-right: 8px;
+        }
+
+        /* Статус секция */
+        .rpg-status-section {
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .rpg-status-bars {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .rpg-status-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rpg-status-label {
+            color: #cccccc;
+            font-size: 14px;
+            min-width: 80px;
+        }
+
+        .rpg-progress-bar {
+            flex: 1;
+            height: 20px;
+            background: #1a1a1a;
+            border: 1px solid #444444;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .rpg-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            transition: width 0.5s ease;
+            border-radius: 9px;
+        }
+
+        /* Разные цвета для разных потребностей */
+        .rpg-progress-bar.hunger .rpg-progress-fill {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+        .rpg-progress-bar.rest .rpg-progress-fill {
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        .rpg-progress-bar.recreation .rpg-progress-fill {
+            background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+
+        .rpg-progress-bar.comfort .rpg-progress-fill {
+            background: linear-gradient(90deg, #06b6d4, #0891b2);
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+        }
+
+        .rpg-status-value {
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 12px;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        /* Миссия секция */
+        .rpg-mission-section {
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .rpg-mission-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .rpg-mission-card:hover {
+            border-color: rgba(0, 255, 255, 0.6);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .rpg-mission-title {
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .rpg-mission-progress {
+            margin-top: 10px;
+        }
+
+        .rpg-mission-bar {
+            height: 15px;
+            background: #1a1a1a;
+            border: 1px solid #444444;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .rpg-mission-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #0080ff);
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        /* Уведомления */
+        .rpg-notifications {
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .rpg-notification-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .rpg-notification-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .rpg-notification-item.info {
+            border-left-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .rpg-notification-item.warning {
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .rpg-notification-item.error {
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .rpg-notification-item i {
+            color: #00ffff;
+        }
+
+        .rpg-notification-item span {
+            color: #cccccc;
+            font-size: 14px;
+        }
+
+        /* Правая панель */
+        .rpg-side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .rpg-inventory-section,
+        .rpg-achievements-section,
+        .rpg-quick-actions {
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .rpg-quick-inventory {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .rpg-inventory-slot {
+            aspect-ratio: 1;
+            background: #1a1a1a;
+            border: 2px solid #444444;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #cccccc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .rpg-inventory-slot:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .rpg-inventory-slot.filled {
+            background: #2a2a2a;
+            border-color: #00ffff;
+            color: #ffffff;
+        }
+
+        .rpg-achievement-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 3px solid #f9ca24;
+        }
+
+        .rpg-achievement-item i {
+            color: #f9ca24;
+        }
+
+        .rpg-achievement-item span {
+            color: #cccccc;
+            font-size: 14px;
+        }
+
+        /* Кнопки */
+        .rpg-btn {
+            background: linear-gradient(145deg, #00ffff, #0080ff);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: #ffffff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 255, 255, 0.3);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .rpg-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 255, 255, 0.5);
+        }
+
+        .rpg-btn:active {
+            transform: translateY(0px);
+        }
+
+        .rpg-btn-small {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .rpg-btn i {
+            margin-right: 5px;
+        }
+
+        .rpg-action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 1200px) {
+            .rpg-overview-container {
+                grid-template-columns: 250px 1fr 200px;
+                gap: 15px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .rpg-overview-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .rpg-status-bars {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Анимации */
+        @keyframes rpg-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(0, 255, 255, 0.6); }
+        }
+
+        .rpg-character-panel {
+            animation: rpg-glow 3s ease-in-out infinite;
+        }
