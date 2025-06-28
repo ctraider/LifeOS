@@ -467,6 +467,11 @@
     .delete-achievement-btn:hover {
       color: #c82333;
     }
+    .flex-between-center {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -482,12 +487,12 @@
     <div class="conversion-history">
       <h3>История конвертаций</h3>
       <div id="conversion-list"></div>
-      <button id="clear-history" style="margin-top: 10px; width: 100%;">Очистить историю</button>
+      <button id="clear-history" class="planner-btn planner-btn-secondary">Очистить историю</button>
     </div>
     <div class="progress-container">
       <input type="number" id="savings-goal" placeholder="Установить цель (в рублях)" min="1">
       <div class="progress-bar">
-        <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+        <div class="progress-fill" id="progress-fill"></div>
       </div>
       <p class="progress-text" id="progress-text">0% (0 / 0 руб.)</p>
     </div>
@@ -564,9 +569,10 @@
       <div class="achievements-sidebar">
         <h2>Достижения</h2>
         <div class="add-achievement">
-          <input type="text" id="achievement-name" placeholder="Название достижения" aria-label="Название достижения">
-          <input type="text" id="achievement-desc" placeholder="Описание" aria-label="Описание достижения">
-          <button id="add-achievement-btn">Добавить</button>
+          <div class="flex-between-center">
+            <input type="text" id="newAchievementInput" placeholder="Новое достижение">
+            <button onclick="addAchievement()" class="planner-btn">Добавить достижение</button>
+          </div>
         </div>
         <div id="achievements-list"></div>
       </div>
@@ -1104,9 +1110,15 @@
         const achDiv = document.createElement('div');
         achDiv.className = 'achievement';
         achDiv.innerHTML = `
-          <h3>${ach.name}</h3>
-          <p>${ach.description}</p>
-          <p>Прогресс: ${ach.condition() ? '100%' : '0%'}</p>
+          <div class="flex-between-center">
+            <div>
+              <h3>${ach.name}</h3>
+              <p>${ach.description}</p>
+            </div>
+            <button class="delete-achievement-btn" data-id="${ach.id}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
         `;
         achievementsList.appendChild(achDiv);
       });
@@ -1116,7 +1128,7 @@
         const achDiv = document.createElement('div');
         achDiv.className = 'achievement';
         achDiv.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="flex-between-center">
             <div>
               <h3>${ach.name}</h3>
               <p>${ach.description}</p>
