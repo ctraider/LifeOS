@@ -449,61 +449,165 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.LifePlanner = (function() {
   // === Все переменные и функции только внутри этого блока ===
-  let data = JSON.parse(localStorage.getItem('lifeOSData')) || {
-    tasks: [],
-    xp: 0,
-    level: 1,
-    currency: 0,
-    hp: 100,
-    achievements: [],
-    conversions: [],
-    savingsGoal: 0,
-    persona: { // Добавляем структуру persona сюда, если она не была определена
-        name: '', age: 28, backstory: 'Исследователь пустошей',
-        traits: 'Трудолюбивый, Оптимист, Нервный',
-        skills: 'Строительство: 8/20\nМедицина: 5/20\nСтрельба: 12/20',
-        equipment: 'Одежда: Пыльник\nОружие: Лазерный пистолет',
-        avatar: ''
-    },
-    inventoryItems: [],
-    health: [],
-    healthStats: [],
-    medicalHistory: [],
-    journalEvents: []
-  };
+  let data = {
+        xp: 0,
+        level: 1,
+        currency: 0,
+        hp: 100,
+        tasks: [],
+        persona: { name: 'Персонаж', age: 28, backstory: 'Исследователь пустошей', traits: 'Трудолюбивый, Оптимист, Нервный', skills: 'Строительство: 8/20\nМедицина: 5/20\nСтрельба: 12/20', equipment: 'Одежда: Пыльник\nОружие: Лазерный пистолет' },
+        inventory: Array(18).fill(null), // 6x3 = 18 слотов
+        health: [], // Журнал здоровья
+        healthStats: [], // RPG характеристики здоровья
+        medicalHistory: [], // История операций и процедур
+        journal: [] // Журнал событий
+    };
   let filterCompleted = null;
   let currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
+
+  const LOCAL_STORAGE_KEY = 'lifeosData';
+
+  function loadData() {
+      const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (savedData) {
+          data = JSON.parse(savedData);
+          // Убедиться, что все необходимые свойства существуют, если это старые данные
+          data.xp = data.xp !== undefined ? data.xp : 0;
+          data.level = data.level !== undefined ? data.level : 1;
+          data.currency = data.currency !== undefined ? data.currency : 0;
+          data.hp = data.hp !== undefined ? data.hp : 100;
+          data.tasks = data.tasks || [];
+          data.persona = data.persona || { name: 'Персонаж', age: 28, backstory: 'Исследователь пустошей', traits: 'Трудолюбивый, Оптимист, Нервный', skills: 'Строительство: 8/20\nМедицина: 5/20\nСтрельба: 12/20', equipment: 'Одежда: Пыльник\nОружие: Лазерный пистолет' };
+          data.inventory = data.inventory || Array(18).fill(null);
+          data.health = data.health || [];
+          data.healthStats = data.healthStats || [];
+          data.medicalHistory = data.medicalHistory || [];
+          data.journal = data.journal || [];
+      }
+  }
+
+  function saveData() {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+  }
 
   // --- Функции для задач ---
   function saveData() {
     localStorage.setItem('lifeOSData', JSON.stringify(data));
   }
 
-  // Функция для расчета опыта, необходимого для следующего уровня
+  // Функция для расчета опыта, необходимого для следующего уровня (прогрессивная шкала)
   function getRequiredXPForLevel(level) {
-    return level * 50; // На первом уровне 50 XP, на втором 100 XP, на третьем 150 XP и т.д.
+    return Math.floor(level * 75 + (level - 1) * 25); // Прогрессивная шкала: уровень 1 = 75 XP, уровень 2 = 125 XP, уровень 3 = 175 XP и т.д.
+  }
+
+  // Функция для расчета XP в зависимости от типа и приоритета задачи
+  function calculateTaskXP(task) {
+    let baseXP = 50; // Базовый опыт
+    
+    // Модификатор приоритета
+    switch (task.priority) {
+      case 'low': baseXP *= 0.8; break;
+      case 'medium': baseXP *= 1.0; break;
+      case 'high': baseXP *= 1.5; break;
+      case 'boss': baseXP *= 2.0; break;
+    }
+    
+    // Модификатор важности и срочности
+    if (task.importance === 'important' && task.urgency === 'urgent') {
+      baseXP *= 1.3; // Бонус за важные и срочные задачи
+    } else if (task.importance === 'important') {
+      baseXP *= 1.1; // Небольшой бонус за важные задачи
+    } else if (task.urgency === 'urgent') {
+      baseXP *= 1.1; // Небольшой бонус за срочные задачи
+    }
+    
+    // Проверяем дедлайн
+    if (task.dueDate) {
+      const now = new Date();
+      const dueDate = new Date(task.dueDate);
+      const timeDiff = dueDate - now;
+      const daysUntilDue = timeDiff / (1000 * 60 * 60 * 24);
+      
+      if (daysUntilDue < 0) {
+        baseXP *= 0.7; // Штраф за просроченные задачи
+      } else if (daysUntilDue <= 1) {
+        baseXP *= 1.2; // Бонус за выполнение в последний день
+      }
+    }
+    
+    return Math.floor(baseXP);
   }
 
   // Добавляем функцию addXP как метод LifePlanner
-  function addXP(amount) {
+  function addXP(amount, task = null) {
+    // Если передана задача, рассчитываем опыт автоматически
+    if (task && amount === undefined) {
+      amount = calculateTaskXP(task);
+    }
+    
     console.log(`addXP: Добавляем ${amount} XP. Текущий XP: ${data.xp}, Уровень: ${data.level}`);
 
     data.xp = (data.xp || 0) + amount;
 
     let xpRequiredForCurrentLevel = getRequiredXPForLevel(data.level);
+    let leveledUp = false;
 
     // Если опыт превышает требуемый для текущего уровня, повышаем уровень
     while (data.xp >= xpRequiredForCurrentLevel) {
       data.xp -= xpRequiredForCurrentLevel;
       data.level = (data.level || 1) + 1;
+      leveledUp = true;
       console.log(`addXP: Уровень повышен! Новый уровень: ${data.level}, Остаток XP: ${data.xp}`);
       // Пересчитываем XP для следующего уровня, так как требование изменилось
       xpRequiredForCurrentLevel = getRequiredXPForLevel(data.level);
     }
+    
+    // Показываем уведомление о получении опыта
+    showXPNotification(amount, leveledUp);
+    
     saveData();
     updateGamificationUI(); // Обновляем глобальный UI
     console.log(`addXP: После сохранения и обновления UI. Текущий XP: ${data.xp}, Уровень: ${data.level}`);
+  }
+  
+  // Функция показа уведомления о получении опыта
+  function showXPNotification(amount, leveledUp = false) {
+    const notification = document.createElement('div');
+    notification.className = 'xp-notification';
+    notification.innerHTML = `
+      <div class="xp-gain">+${amount} XP</div>
+      ${leveledUp ? '<div class="level-up">УРОВЕНЬ ПОВЫШЕН!</div>' : ''}
+    `;
+    
+    // Стили для уведомления
+    notification.style.cssText = `
+      position: fixed;
+      top: 100px;
+      right: 20px;
+      background: linear-gradient(135deg, #D4AF37, #FFD700);
+      color: #000;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.6);
+      z-index: 10000;
+      font-weight: bold;
+      text-align: center;
+      border: 2px solid #B8860B;
+      animation: xpSlideIn 0.5s ease-out;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Удаляем уведомление через 3 секунды
+    setTimeout(() => {
+      notification.style.animation = 'xpSlideOut 0.5s ease-out';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 500);
+    }, 3000);
   }
 
   function addTask() {
@@ -575,7 +679,7 @@ window.LifePlanner = (function() {
       checkbox.addEventListener('change', () => {
         task.completed = !task.completed;
         if (task.completed) {
-          addXP(50); // Начисляем 50 XP при завершении задачи
+          addXP(undefined, task); // Передаем объект задачи для расчета XP
         }
         saveData();
         renderTasks();
@@ -607,9 +711,25 @@ window.LifePlanner = (function() {
     updateGamificationUI();
     updateStats();
   }
+  
+  // Функция для обновления статистики
+  function updateStats() {
+    const totalTasksEl = document.getElementById('total-tasks');
+    const completedTasksEl = document.getElementById('completed-tasks');
+    const activeTasksEl = document.getElementById('active-tasks');
+    
+    const totalTasks = data.tasks.length;
+    const completedTasks = data.tasks.filter(t => t.completed).length;
+    const activeTasks = totalTasks - completedTasks;
+    
+    if (totalTasksEl) totalTasksEl.textContent = totalTasks;
+    if (completedTasksEl) completedTasksEl.textContent = completedTasks;
+    if (activeTasksEl) activeTasksEl.textContent = activeTasks;
+  }
   // ... (остальные функции: addSubTask, renderSubTasks, generateCalendar, addAchievement, валюта и т.д.)
 
   function init() {
+    loadData(); // Загружаем данные при инициализации LifePlanner
     // Навешиваем обработчики событий только после загрузки DOM
     const addTaskButton = document.getElementById('add-task');
     const newTaskInput = document.getElementById('new-task');
@@ -648,6 +768,7 @@ window.LifePlanner = (function() {
     toggleCompletePlanner, // Оставляем для совместимости, но ее логика теперь пуста/предупреждает
     deleteTaskPlanner,
     getData: function() { return data; }, // Экспортируем данные
+    saveData, // Экспортируем функцию сохранения данных
     addXP, // Экспортируем addXP
     getRequiredXPForLevel // Экспортируем getRequiredXPForLevel
     // ... (остальные публичные методы)
@@ -655,17 +776,50 @@ window.LifePlanner = (function() {
 })();
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Временно очищаем localStorage для чистого старта и проверки логики XP
-    localStorage.clear(); 
-
+    // Убираем localStorage.clear() чтобы данные сохранялись между сессиями
+    console.log('Инициализация LifeOS...');
+    
     loadPersonaData();
     loadInventory();
     renderHealthStats();
     renderHealthLog();
     if (window.LifePlanner && typeof window.LifePlanner.init === 'function') {
         window.LifePlanner.init();
+        console.log('LifePlanner инициализирован');
     }
+    
+    // Проверяем данные после инициализации
+    const data = window.LifePlanner.getData();
+    console.log('Данные LifePlanner после инициализации:', data);
+    console.log('XP:', data.xp, 'Уровень:', data.level);
+    
+    // Убираем тестовое добавление XP, так как теперь данные загружаются
+    // if (data.xp === 0) {
+    //     console.log('Добавляем тестовый XP для демонстрации...');
+    //     window.LifePlanner.addXP(25); // Добавляем 25 XP для тестирования
+    // }
+    
     updateGamificationUI(); // Теперь updateGamificationUI будет использовать LifePlanner.getData()
+    
+    // Инициализируем RPG обзор
+    updateRPGOverview();
+    
+    // Обновляем RPG обзор при переключении на вкладку "Обзор"
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const summaryTab = document.getElementById('summary');
+                if (summaryTab && summaryTab.classList.contains('active')) {
+                    updateRPGOverview();
+                }
+            }
+        });
+    });
+    
+    const summaryTab = document.getElementById('summary');
+    if (summaryTab) {
+        observer.observe(summaryTab, { attributes: true });
+    }
 });
 
 // Удалить/закомментировать все старые функции и переменные для задач LifeOS
@@ -1111,20 +1265,90 @@ function updateGamificationUI() {
   document.querySelectorAll('#level').forEach(el => el.textContent = level);
   document.querySelectorAll('#xp').forEach(el => el.textContent = `${xp}/${xpForNextLevel}`);
 
-  // Обновляем прогресс-бар
+  // ИСПРАВЛЕННЫЙ ПРОГРЕСС-БАР
   const percent = Math.min(100, Math.round((xp / xpForNextLevel) * 100));
   const xpProgress = document.getElementById('xpProgress');
+  
+  console.log(`Поиск элемента xpProgress...`);
   if (xpProgress) {
+    console.log(`✅ Элемент xpProgress найден!`);
+    console.log(`📊 Устанавливаем ширину: ${percent}% (XP: ${xp}/${xpForNextLevel})`);
+    
+    // ПРИНУДИТЕЛЬНО устанавливаем ширину
     xpProgress.style.width = percent + '%';
-    // Дополнительная проверка: если процент > 0, но ширина почему-то 0, установим минимальную видимую ширину.
-    // Это помогает при возможных проблемах рендеринга или очень малых значениях.
-    if (percent > 0 && xpProgress.style.width === '0%') {
-      xpProgress.style.width = '1%'; 
+    xpProgress.style.transition = 'width 0.5s ease';
+    
+    // ПРИНУДИТЕЛЬНО устанавливаем базовые стили ВСЕГДА
+    xpProgress.style.background = 'linear-gradient(135deg, #D4AF37 0%, #FFD700 35%, #FFA500 70%, #FF8C00 100%)';
+    xpProgress.style.height = '100%';
+    xpProgress.style.borderRadius = '6px';
+    xpProgress.style.display = 'block';
+    xpProgress.style.position = 'relative';
+    xpProgress.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.4)';
+    
+    // Принудительно перерисовываем элемент
+    xpProgress.offsetHeight; // trigger reflow
+    
+    // Проверяем результат
+    const finalWidth = xpProgress.style.width;
+    console.log(`🎯 Финальная ширина прогресс-бара: ${finalWidth}`);
+    
+    // Если процент больше 0, но ширина все еще 0%, принудительно устанавливаем минимум
+    if (percent > 0 && (finalWidth === '0%' || finalWidth === '')) {
+      console.log('⚠️ Принудительно устанавливаем минимальную ширину 2%');
+      xpProgress.style.width = '2%';
     }
-    // Убедимся, что фон установлен, если вдруг CSS не применяется (хотя это маловероятно при правильном CSS).
-    xpProgress.style.backgroundColor = '#7A6A53'; // Цвет из вашего CSS для xp-progress
-    console.log(`updateGamificationUI: Установлена ширина прогресс-бара: ${xpProgress.style.width} (процент: ${percent}%)`);
+    
+  } else {
+    console.error('❌ Элемент xpProgress НЕ НАЙДЕН!');
+    // Попробуем найти все элементы с похожими ID
+    const allElements = document.querySelectorAll('[id*="xp"], [id*="Progress"]');
+    console.log('🔍 Найденные элементы с xp/Progress:', allElements);
   }
+  
+  // Создаем сегменты для XP бара
+  createXPSegments(xpForNextLevel);
+  
+  // Обновляем подсказку
+  updateXPTooltip(xp, xpForNextLevel, level);
+}
+
+// Функция для создания сегментов XP бара
+function createXPSegments(maxXP) {
+  const segmentsContainer = document.getElementById('xpSegments');
+  if (!segmentsContainer) {
+    console.warn('Контейнер сегментов XP не найден');
+    return;
+  }
+  
+  console.log('Создаем сегменты XP бара...');
+  
+  // Очищаем существующие сегменты
+  segmentsContainer.innerHTML = '';
+  
+  // Создаем 10 сегментов
+  const segmentCount = 10;
+  for (let i = 1; i < segmentCount; i++) {
+    const segment = document.createElement('div');
+    segment.className = 'xp-segment';
+    const position = (i / segmentCount) * 100;
+    segment.style.left = `${position}%`;
+    segmentsContainer.appendChild(segment);
+    console.log(`Сегмент ${i} создан на позиции ${position}%`);
+  }
+  
+  console.log(`Создано ${segmentCount - 1} сегментов XP`);
+}
+
+// Функция для обновления подсказки XP системы
+function updateXPTooltip(currentXP, requiredXP, level) {
+  const tooltipCurrentXP = document.getElementById('tooltipCurrentXP');
+  const tooltipRequiredXP = document.getElementById('tooltipRequiredXP');
+  const tooltipRemainingXP = document.getElementById('tooltipRemainingXP');
+  
+  if (tooltipCurrentXP) tooltipCurrentXP.textContent = currentXP;
+  if (tooltipRequiredXP) tooltipRequiredXP.textContent = requiredXP;
+  if (tooltipRemainingXP) tooltipRemainingXP.textContent = requiredXP - currentXP;
 }
 
 // Обновляем список экспортируемых функций, чтобы включить новые или измененные
@@ -1142,6 +1366,260 @@ window.renderMedicalHistory = renderMedicalHistory;
 window.filterHistory = filterHistory;
 window.editMedicalHistoryEntry = editMedicalHistoryEntry;
 window.deleteMedicalHistoryEntry = deleteMedicalHistoryEntry;
+
+// RPG Overview функции
+window.updateRPGOverview = updateRPGOverview;
+window.renderRPGQuickInventory = renderRPGQuickInventory;
+window.updateRPGStatusBars = updateRPGStatusBars;
+window.updateRPGCurrentMission = updateRPGCurrentMission;
+window.updateRPGNotifications = updateRPGNotifications;
+
+// === RPG OVERVIEW ФУНКЦИИ ===
+function updateRPGOverview() {
+    updateRPGCharacterInfo();
+    updateRPGXPBar();
+    updateRPGQuickStats();
+    updateRPGStatusBars();
+    updateRPGCurrentMission();
+    updateRPGNotifications();
+    renderRPGQuickInventory();
+    renderRPGRecentAchievements();
+}
+
+function updateRPGCharacterInfo() {
+    const personaData = LifePlanner.getData().persona;
+    const rpgCharacterName = document.getElementById('rpgCharacterName');
+    const rpgAvatar = document.getElementById('rpgAvatar');
+    
+    if (rpgCharacterName) {
+        rpgCharacterName.textContent = personaData.name || 'Персонаж';
+    }
+    
+    if (rpgAvatar && personaData.avatar) {
+        rpgAvatar.style.backgroundImage = `url(${personaData.avatar})`;
+        rpgAvatar.innerHTML = '';
+    }
+}
+
+function updateRPGXPBar() {
+    const data = LifePlanner.getData();
+    const currentXP = data.xp || 0;
+    const currentLevel = data.level || 1;
+    const requiredXP = LifePlanner.getRequiredXPForLevel ? LifePlanner.getRequiredXPForLevel(currentLevel) : 100;
+    
+    const rpgLevel = document.getElementById('rpgLevel');
+    const rpgXpFill = document.getElementById('rpgXpFill');
+    const rpgXpText = document.getElementById('rpgXpText');
+    
+    if (rpgLevel) rpgLevel.textContent = currentLevel;
+    if (rpgXpText) rpgXpText.textContent = `${currentXP} / ${requiredXP}`;
+    
+    if (rpgXpFill) {
+        const percentage = Math.min((currentXP / requiredXP) * 100, 100);
+        rpgXpFill.style.width = `${percentage}%`;
+    }
+}
+
+function updateRPGQuickStats() {
+    const data = LifePlanner.getData();
+    const tasks = data.tasks || [];
+    const completedTasks = tasks.filter(t => t.completed).length;
+    
+    const rpgHealth = document.getElementById('rpgHealth');
+    const rpgCurrency = document.getElementById('rpgCurrency');
+    const rpgTasksCount = document.getElementById('rpgTasksCount');
+    
+    if (rpgHealth) rpgHealth.textContent = data.hp || 100;
+    if (rpgCurrency) rpgCurrency.textContent = data.currency || 0;
+    if (rpgTasksCount) rpgTasksCount.textContent = `${completedTasks}/${tasks.length}`;
+}
+
+function updateRPGStatusBars() {
+    // Обновляем статус-бары потребностей
+    const statusBars = [
+        { id: 'rpgHunger', value: 70, className: 'hunger' },
+        { id: 'rpgRest', value: 80, className: 'rest' },
+        { id: 'rpgRecreation', value: 60, className: 'recreation' },
+        { id: 'rpgComfort', value: 75, className: 'comfort' }
+    ];
+    
+    statusBars.forEach(bar => {
+        const element = document.getElementById(bar.id);
+        if (element) {
+            element.style.width = `${bar.value}%`;
+            // Обновляем текст процента рядом с баром
+            const statusValue = element.parentElement.parentElement.querySelector('.rpg-status-value');
+            if (statusValue) {
+                statusValue.textContent = `${bar.value}%`;
+            }
+        }
+    });
+}
+
+function updateRPGCurrentMission() {
+    const data = LifePlanner.getData();
+    const tasks = data.tasks || [];
+    const activeTasks = tasks.filter(t => !t.completed);
+    
+    const rpgCurrentMission = document.getElementById('rpgCurrentMission');
+    if (!rpgCurrentMission) return;
+    
+    if (activeTasks.length === 0) {
+        rpgCurrentMission.innerHTML = `
+            <div class="rpg-mission-title">Нет активных миссий</div>
+            <div class="rpg-mission-progress">
+                <div class="rpg-mission-bar">
+                    <div class="rpg-mission-fill" style="width: 100%"></div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Сортируем задачи по приоритету и срочности
+    activeTasks.sort((a, b) => {
+        if (a.priority === 'boss' && b.priority !== 'boss') return -1;
+        if (b.priority === 'boss' && a.priority !== 'boss') return 1;
+        if (a.urgency === 'urgent' && b.urgency !== 'urgent') return -1;
+        if (b.urgency === 'urgent' && a.urgency !== 'urgent') return 1;
+        if (a.importance === 'important' && b.importance !== 'important') return -1;
+        if (b.importance === 'important' && a.importance !== 'important') return 1;
+        return 0;
+    });
+    
+    const currentTask = activeTasks[0];
+    const progress = tasks.length > 0 ? Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100) : 0;
+    
+    rpgCurrentMission.innerHTML = `
+        <div class="rpg-mission-title">${currentTask.text}</div>
+        <div class="rpg-mission-progress">
+            <div class="rpg-mission-bar">
+                <div class="rpg-mission-fill" style="width: ${progress}%"></div>
+            </div>
+        </div>
+    `;
+}
+
+function updateRPGNotifications() {
+    const data = LifePlanner.getData();
+    const tasks = data.tasks || [];
+    const rpgNotifications = document.getElementById('rpgNotifications');
+    
+    if (!rpgNotifications) return;
+    
+    let notifications = [];
+    
+    // Проверяем просроченные задачи
+    const now = new Date();
+    const overdueTasks = tasks.filter(task => {
+        if (!task.dueDate || task.completed) return false;
+        return new Date(task.dueDate) < now;
+    });
+    
+    if (overdueTasks.length > 0) {
+        notifications.push({
+            type: 'error',
+            icon: 'fas fa-exclamation-triangle',
+            text: `Просрочено задач: ${overdueTasks.length}`
+        });
+    }
+    
+    // Проверяем задачи на сегодня
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
+    
+    const todayTasks = tasks.filter(task => {
+        if (!task.dueDate || task.completed) return false;
+        const taskDate = new Date(task.dueDate);
+        return taskDate >= today && taskDate <= todayEnd;
+    });
+    
+    if (todayTasks.length > 0) {
+        notifications.push({
+            type: 'warning',
+            icon: 'fas fa-clock',
+            text: `Задач на сегодня: ${todayTasks.length}`
+        });
+    }
+    
+    // Если нет важных уведомлений, показываем информационное
+    if (notifications.length === 0) {
+        notifications.push({
+            type: 'info',
+            icon: 'fas fa-info-circle',
+            text: 'Система готова к работе'
+        });
+    }
+    
+    // Рендерим уведомления
+    rpgNotifications.innerHTML = notifications.map(notif => `
+        <div class="rpg-notification-item ${notif.type}">
+            <i class="${notif.icon}"></i>
+            <span>${notif.text}</span>
+        </div>
+    `).join('');
+}
+
+function renderRPGQuickInventory() {
+    const inventoryItems = LifePlanner.getData().inventoryItems || [];
+    const rpgQuickInventory = document.getElementById('rpgQuickInventory');
+    
+    if (!rpgQuickInventory) return;
+    
+    rpgQuickInventory.innerHTML = '';
+    
+    // Показываем первые 6 слотов инвентаря
+    for (let i = 0; i < 6; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'rpg-inventory-slot';
+        
+        const item = inventoryItems.find(item => item.slot === i);
+        if (item) {
+            slot.classList.add('filled');
+            slot.textContent = item.name.substring(0, 6) + (item.name.length > 6 ? '...' : '');
+            slot.title = `${item.name} (x${item.quantity})`;
+        } else {
+            slot.textContent = '—';
+            slot.title = 'Пустой слот';
+        }
+        
+        rpgQuickInventory.appendChild(slot);
+    }
+}
+
+function renderRPGRecentAchievements() {
+    const achievements = LifePlanner.getData().achievements || [];
+    const rpgRecentAchievements = document.getElementById('rpgRecentAchievements');
+    
+    if (!rpgRecentAchievements) return;
+    
+    rpgRecentAchievements.innerHTML = '';
+    
+    // Показываем последние 3 достижения
+    const recentAchievements = achievements.slice(-3);
+    
+    if (recentAchievements.length === 0) {
+        rpgRecentAchievements.innerHTML = `
+            <div class="rpg-achievement-item">
+                <i class="fas fa-star"></i>
+                <span>Первые шаги</span>
+            </div>
+        `;
+        return;
+    }
+    
+    recentAchievements.forEach(achievement => {
+        const achievementElement = document.createElement('div');
+        achievementElement.className = 'rpg-achievement-item';
+        achievementElement.innerHTML = `
+            <i class="fas fa-trophy"></i>
+            <span>${achievement.name}</span>
+        `;
+        rpgRecentAchievements.appendChild(achievementElement);
+    });
+}
 
 function closeModal() {
     const addModal = document.getElementById('add-item-modal');
@@ -1177,5 +1655,224 @@ function createControls(areas) {
         });
     });
 }
+
+// Функции для работы с характеристиками здоровья
+function openAddHealthStatModal() {
+    document.getElementById('healthStatModal').style.display = 'flex';
+    document.getElementById('healthStatModalTitle').textContent = 'Добавить характеристику здоровья';
+    document.getElementById('editingStatIndex').value = '-1';
+    clearHealthStatForm();
+}
+
+function closeHealthStatModal() {
+    document.getElementById('healthStatModal').style.display = 'none';
+    clearHealthStatForm();
+}
+
+function clearHealthStatForm() {
+    document.getElementById('statName').value = '';
+    document.getElementById('statValue').value = '';
+    document.getElementById('statUnit').value = '';
+    document.getElementById('statCategory').value = 'Физическое состояние';
+    document.getElementById('statComment').value = '';
+}
+
+function saveHealthStat() {
+    const name = document.getElementById('statName').value.trim();
+    const value = document.getElementById('statValue').value.trim();
+    const unit = document.getElementById('statUnit').value.trim();
+    const category = document.getElementById('statCategory').value;
+    const comment = document.getElementById('statComment').value.trim();
+    const editingIndex = parseInt(document.getElementById('editingStatIndex').value);
+
+    if (!name || !value) {
+        alert('Пожалуйста, заполните название и значение характеристики.');
+        return;
+    }
+
+    const healthStat = {
+        id: editingIndex === -1 ? Date.now() : LifePlanner.getData().healthStats[editingIndex].id,
+        name: name,
+        value: value,
+        unit: unit,
+        category: category,
+        comment: comment,
+        lastUpdated: new Date().toISOString().split('T')[0]
+    };
+
+    if (editingIndex === -1) {
+        // Добавляем новую характеристику
+        LifePlanner.getData().healthStats.push(healthStat);
+    } else {
+        // Редактируем существующую
+        LifePlanner.getData().healthStats[editingIndex] = healthStat;
+    }
+
+    LifePlanner.saveData();
+    renderHealthStats();
+    closeHealthStatModal();
+}
+
+function renderHealthStats() {
+    const container = document.getElementById('health-stats-container');
+    if (!container) return;
+
+    const healthStats = LifePlanner.getData().healthStats || [];
+    container.innerHTML = '';
+
+    if (healthStats.length === 0) {
+        container.innerHTML = '<p class="placeholder-text">Характеристики здоровья не добавлены.</p>';
+        return;
+    }
+
+    // Группируем по категориям
+    const groupedStats = {};
+    healthStats.forEach(stat => {
+        if (!groupedStats[stat.category]) {
+            groupedStats[stat.category] = [];
+        }
+        groupedStats[stat.category].push(stat);
+    });
+
+    Object.keys(groupedStats).forEach(category => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'health-stats-category';
+        categoryDiv.style.cssText = `
+            background: #383838;
+            border: 1px solid #4A4A4A;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        `;
+
+        const categoryTitle = document.createElement('h4');
+        categoryTitle.textContent = category;
+        categoryTitle.style.cssText = `
+            color: #E1D7C7;
+            margin: 0 0 10px 0;
+            border-bottom: 1px solid #4A4A4A;
+            padding-bottom: 5px;
+        `;
+        categoryDiv.appendChild(categoryTitle);
+
+        groupedStats[category].forEach((stat, index) => {
+            const statDiv = document.createElement('div');
+            statDiv.className = 'health-stat-item';
+            statDiv.style.cssText = `
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                padding: 10px;
+                margin-bottom: 8px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            `;
+
+            const statInfo = document.createElement('div');
+            statInfo.innerHTML = `
+                <strong style="color: #D1C7B7;">${stat.name}:</strong> 
+                <span style="color: #A89F8D;">${stat.value} ${stat.unit || ''}</span>
+                ${stat.comment ? `<br><small style="color: #888;">${stat.comment}</small>` : ''}
+            `;
+
+            const statActions = document.createElement('div');
+            statActions.innerHTML = `
+                <button onclick="editHealthStat(${healthStats.indexOf(stat)})" 
+                        style="background: #007bff; color: white; border: none; padding: 4px 8px; margin-right: 5px; border-radius: 3px; cursor: pointer;">Ред.</button>
+                <button onclick="deleteHealthStat(${healthStats.indexOf(stat)})" 
+                        style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer;">Удалить</button>
+            `;
+
+            statDiv.appendChild(statInfo);
+            statDiv.appendChild(statActions);
+            categoryDiv.appendChild(statDiv);
+        });
+
+        container.appendChild(categoryDiv);
+    });
+}
+
+function editHealthStat(index) {
+    const healthStat = LifePlanner.getData().healthStats[index];
+    if (!healthStat) return;
+
+    document.getElementById('healthStatModalTitle').textContent = 'Редактировать характеристику здоровья';
+    document.getElementById('editingStatIndex').value = index;
+    document.getElementById('statName').value = healthStat.name;
+    document.getElementById('statValue').value = healthStat.value;
+    document.getElementById('statUnit').value = healthStat.unit || '';
+    document.getElementById('statCategory').value = healthStat.category;
+    document.getElementById('statComment').value = healthStat.comment || '';
+    
+    openAddHealthStatModal();
+}
+
+function deleteHealthStat(index) {
+    const healthStat = LifePlanner.getData().healthStats[index];
+    if (!healthStat) return;
+
+    if (confirm(`Вы уверены, что хотите удалить характеристику "${healthStat.name}"?`)) {
+        LifePlanner.getData().healthStats.splice(index, 1);
+        LifePlanner.saveData();
+        renderHealthStats();
+    }
+}
+
+function renderHealthLog() {
+    const healthList = document.getElementById('healthList');
+    if (!healthList) return;
+
+    const healthEntries = LifePlanner.getData().health || [];
+    healthList.innerHTML = '';
+
+    if (healthEntries.length === 0) {
+        healthList.innerHTML = '<p class="placeholder-text">Записей о здоровье нет.</p>';
+        return;
+    }
+
+    // Сортируем записи по дате (от новых к старым)
+    const sortedEntries = [...healthEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    sortedEntries.forEach((entry, index) => {
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'health-log-entry';
+        entryDiv.style.cssText = `
+            background: #383838;
+            border: 1px solid #4A4A4A;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+        `;
+
+        entryDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <strong style="color: #E1D7C7;">Дата: ${entry.date}</strong><br>
+                    <span style="color: #A89F8D;">Сон: ${entry.sleep} ч, Вода: ${entry.water} л</span>
+                    ${entry.note ? `<br><em style="color: #888;">${entry.note}</em>` : ''}
+                </div>
+                <button onclick="deleteHealthEntry(${healthEntries.indexOf(entry)})" 
+                        style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer;">Удалить</button>
+            </div>
+        `;
+
+        healthList.appendChild(entryDiv);
+    });
+}
+
+function deleteHealthEntry(index) {
+    const healthEntry = LifePlanner.getData().health[index];
+    if (!healthEntry) return;
+
+    if (confirm('Вы уверены, что хотите удалить эту запись о здоровье?')) {
+        LifePlanner.getData().health.splice(index, 1);
+        LifePlanner.saveData();
+        renderHealthLog();
+    }
+}
+
+// Глобальный экспорт новых функций
+window.editHealthStat = editHealthStat;
 
 
