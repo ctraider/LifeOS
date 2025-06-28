@@ -563,7 +563,7 @@ window.LifePlanner = (function() {
     });
     filtered.forEach(task => {
       const li = document.createElement('li');
-      li.className = 'planner-task-item';
+      li.className = 'task-list-item';
       if (task.completed) li.classList.add('completed');
       const contentDiv = document.createElement('div');
       contentDiv.className = 'planner-task-content';
@@ -820,22 +820,19 @@ function renderWorkTasks() {
     const tasks = LifePlanner.getData().tasks; // Используем задачи из LifePlanner
 
     if (tasks.length === 0) {
-        taskList.innerHTML = '<p style="color: #A89F8D;">Задачи не добавлены.</p>';
+        taskList.innerHTML = '<p class="placeholder-text">Задачи не добавлены.</p>';
         return;
     }
 
     // Отображаем только основные задачи (без подзадач, так как они рендерятся в planner.js)
     tasks.filter(task => !task.isSubTask).forEach((task, index) => {
         const li = document.createElement('li');
-        li.style.padding = '0.5rem';
-        li.style.background = '#383838'; // Соответствует .summary-section
-        li.style.borderRadius = '4px';
-        li.style.marginBottom = '0.5rem';
+        li.className = 'task-list-item';
         li.innerHTML = `
             ${task.text} (Приоритет: ${task.priority})
-            <button onclick="window.setTaskPriority('${task.id}', 'up')" style="background:#007bff; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">↑</button>
-            <button onclick="window.setTaskPriority('${task.id}', 'down')" style="background:#dc3545; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">↓</button>
-            <button onclick="LifePlanner.deleteTask('${task.id}')" style="background:#6c757d; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Удалить</button>
+            <button onclick="window.setTaskPriority('${task.id}', 'up')" class="task-priority-button task-priority-up-button">↑</button>
+            <button onclick="window.setTaskPriority('${task.id}', 'down')" class="task-priority-button task-priority-down-button">↓</button>
+            <button onclick="LifePlanner.deleteTask('${task.id}')" class="task-priority-button task-delete-button">Удалить</button>
         `;
         taskList.appendChild(li);
     });
@@ -907,13 +904,9 @@ function renderDailySchedule() {
 
     for(let i=0; i<24; i++){
         let hourBlock = document.createElement('div');
-        hourBlock.style.border = '1px solid #4A4A4A';
-        hourBlock.style.background = '#383838'; // Default background for empty slot
+        hourBlock.className = 'schedule-hour-block';
         hourBlock.title = i + ':00 - ' + (i+1) + ':00 - Свободно';
         hourBlock.textContent = i.toString().padStart(2, '0');
-        hourBlock.style.fontSize = '10px';
-        hourBlock.style.textAlign = 'center';
-        hourBlock.style.cursor = 'pointer';
         hourBlock.onclick = () => alert('Назначить задачу на ' + i + ':00');
         scheduleContainer.appendChild(hourBlock);
     }
@@ -946,7 +939,7 @@ function renderJournalEvents() {
     const journalEvents = LifePlanner.getData().journalEvents || []; // Добавим новое поле в data
 
     if (journalEvents.length === 0) {
-        journalEntryList.innerHTML = '<li style="color: #A89F8D;">Записей в журнале нет.</li>';
+        journalEntryList.innerHTML = '<li class="placeholder-text">Записей в журнале нет.</li>';
         return;
     }
 
@@ -955,16 +948,11 @@ function renderJournalEvents() {
 
     sortedEvents.forEach((entry, index) => {
         const li = document.createElement('li');
-        li.style.borderBottom = '1px dashed #4A4A4A';
-        li.style.paddingBottom = '0.5rem';
-        li.style.marginBottom = '0.5rem';
-        li.style.background = '#383838'; // Соответствует .summary-section
-        li.style.borderRadius = '4px';
-        li.style.padding = '0.5rem';
+        li.className = 'journal-entry-item';
         li.innerHTML = `
-            <strong>${entry.time}:</strong> ${entry.text} <span style="color: ${getJournalEventTypeColor(entry.type)};">[${entry.type}]</span>
-            <button onclick="window.editJournalEvent(${index})" style="background:#007bff; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Редактировать</button>
-            <button onclick="window.deleteJournalEvent(${index})" style="background:#dc3545; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Удалить</button>
+            <strong>${entry.time}:</strong> ${entry.text} <span class="journal-event-type-color" style="color: ${getJournalEventTypeColor(entry.type)};">[${entry.type}]</span>
+            <button onclick="window.editJournalEvent(${index})" class="journal-edit-button">Редактировать</button>
+            <button onclick="window.deleteJournalEvent(${index})" class="journal-delete-button">Удалить</button>
         `;
         journalEntryList.appendChild(li);
     });
@@ -997,7 +985,7 @@ function filterJournalEvents() {
     });
 
     if (filteredEvents.length === 0) {
-        journalEntryList.innerHTML = '<li style="color: #A89F8D;">Нет записей, соответствующих фильтру.</li>';
+        journalEntryList.innerHTML = '<li class="placeholder-text">Нет записей, соответствующих фильтру.</li>';
         return;
     }
 
@@ -1005,16 +993,11 @@ function filterJournalEvents() {
 
     sortedEvents.forEach((entry, index) => {
         const li = document.createElement('li');
-        li.style.borderBottom = '1px dashed #4A4A4A';
-        li.style.paddingBottom = '0.5rem';
-        li.style.marginBottom = '0.5rem';
-        li.style.background = '#383838';
-        li.style.borderRadius = '4px';
-        li.style.padding = '0.5rem';
+        li.className = 'journal-entry-item';
         li.innerHTML = `
-            <strong>${entry.time}:</strong> ${entry.text} <span style="color: ${getJournalEventTypeColor(entry.type)};">[${entry.type}]</span>
-            <button onclick="window.editJournalEvent(${index})" style="background:#007bff; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Редактировать</button>
-            <button onclick="window.deleteJournalEvent(${index})" style="background:#dc3545; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Удалить</button>
+            <strong>${entry.time}:</strong> ${entry.text} <span class="journal-event-type-color" style="color: ${getJournalEventTypeColor(entry.type)};">[${entry.type}]</span>
+            <button onclick="window.editJournalEvent(${index})" class="journal-edit-button">Редактировать</button>
+            <button onclick="window.deleteJournalEvent(${index})" class="journal-delete-button">Удалить</button>
         `;
         journalEntryList.appendChild(li);
     });
@@ -1040,7 +1023,7 @@ function renderMedicalHistory() {
     const medicalHistory = LifePlanner.getData().medicalHistory || []; // Добавим новое поле в data
 
     if (medicalHistory.length === 0) {
-        medicalHistoryList.innerHTML = '<li style="color: #A89F8D;">Записей в истории нет.</li>';
+        medicalHistoryList.innerHTML = '<li class="placeholder-text">Записей в истории нет.</li>';
         return;
     }
 
@@ -1048,16 +1031,11 @@ function renderMedicalHistory() {
 
     sortedHistory.forEach((entry, index) => {
         const li = document.createElement('li');
-        li.style.borderBottom = '1px dashed #4A4A4A';
-        li.style.paddingBottom = '0.5rem';
-        li.style.marginBottom = '0.5rem';
-        li.style.background = '#383838'; // Соответствует .summary-section
-        li.style.borderRadius = '4px';
-        li.style.padding = '0.5rem';
+        li.className = 'medical-history-item';
         li.innerHTML = `
-            <strong>Дата: ${entry.date}</strong> - ${entry.text}. Статус: ${entry.status}. <span style="color: ${getMedicalHistoryTypeColor(entry.type)};">[${entry.type}]</span>
-            <button onclick="window.editMedicalHistoryEntry(${index})" style="background:#007bff; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Редактировать</button>
-            <button onclick="window.deleteMedicalHistoryEntry(${index})" style="background:#dc3545; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Удалить</button>
+            <strong>Дата: ${entry.date}</strong> - ${entry.text}. Статус: ${entry.status}. <span class="medical-history-type-color" style="color: ${getMedicalHistoryTypeColor(entry.type)};">[${entry.type}]</span>
+            <button onclick="window.editMedicalHistoryEntry(${index})" class="medical-history-edit-button">Редактировать</button>
+            <button onclick="window.deleteMedicalHistoryEntry(${index})" class="medical-history-delete-button">Удалить</button>
         `;
         medicalHistoryList.appendChild(li);
     });
@@ -1085,7 +1063,7 @@ function filterHistory(typeFilter) {
     });
 
     if (filteredHistory.length === 0) {
-        medicalHistoryList.innerHTML = '<li style="color: #A89F8D;">Нет записей, соответствующих фильтру.</li>';
+        medicalHistoryList.innerHTML = '<li class="placeholder-text">Нет записей, соответствующих фильтру.</li>';
         return;
     }
 
@@ -1093,16 +1071,11 @@ function filterHistory(typeFilter) {
 
     sortedHistory.forEach((entry, index) => {
         const li = document.createElement('li');
-        li.style.borderBottom = '1px dashed #4A4A4A';
-        li.style.paddingBottom = '0.5rem';
-        li.style.marginBottom = '0.5rem';
-        li.style.background = '#383838';
-        li.style.borderRadius = '4px';
-        li.style.padding = '0.5rem';
+        li.className = 'medical-history-item';
         li.innerHTML = `
-            <strong>Дата: ${entry.date}</strong> - ${entry.text}. Статус: ${entry.status}. <span style="color: ${getMedicalHistoryTypeColor(entry.type)};">[${entry.type}]</span>
-            <button onclick="window.editMedicalHistoryEntry(${index})" style="background:#007bff; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Редактировать</button>
-            <button onclick="window.deleteMedicalHistoryEntry(${index})" style="background:#dc3545; color:white; padding:2px 5px; border:none; border-radius:3px; cursor:pointer;">Удалить</button>
+            <strong>Дата: ${entry.date}</strong> - ${entry.text}. Статус: ${entry.status}. <span class="medical-history-type-color" style="color: ${getMedicalHistoryTypeColor(entry.type)};">[${entry.type}]</span>
+            <button onclick="window.editMedicalHistoryEntry(${index})" class="medical-history-edit-button">Редактировать</button>
+            <button onclick="window.deleteMedicalHistoryEntry(${index})" class="medical-history-delete-button">Удалить</button>
         `;
         medicalHistoryList.appendChild(li);
     });
@@ -1176,6 +1149,33 @@ function closeModal() {
     if (addModal) addModal.style.display = 'none';
     if (overlay) overlay.style.display = 'none';
     // Добавьте сюда другие модальные окна, если они есть и используют эту функцию
+}
+
+function createControls(areas) {
+    const container = document.getElementById('lifeBalanceControls');
+    container.innerHTML = '';
+    
+    areas.forEach((area, index) => {
+        const controlDiv = document.createElement('div');
+        controlDiv.className = 'life-area-control';
+        
+        controlDiv.innerHTML = `
+            <div class="life-area-control-display" style="background: ${area.color};"></div>
+            <input type="text" class="area-name life-area-name-input" value="${area.name}">
+            <input type="range" class="area-value life-area-value-input" min="0" max="10" value="${area.value}"
+                   oninput="updateChartRealtime()">
+            <span class="life-area-value-display">${area.value}</span>
+        `;
+        
+        container.appendChild(controlDiv);
+        
+        // Обновление отображения значения при изменении слайдера
+        const slider = controlDiv.querySelector('.area-value');
+        const display = controlDiv.querySelector('.life-area-value-display');
+        slider.addEventListener('input', function() {
+            display.textContent = this.value;
+        });
+    });
 }
 
 
