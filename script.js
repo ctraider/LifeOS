@@ -747,13 +747,11 @@ window.LifePlanner = (function() {
   }
 
   function toggleCompletePlanner(taskId) {
-    // Удаляем или закомментируем содержимое этой функции, так как логика завершения задачи
-    // и начисления опыта теперь управляется напрямую через обработчик чекбокса в renderTasks.
-    // Если эта функция вызывается откуда-то еще, нужно пересмотреть ее использование.
-    // Пока оставлю пустой или с предупреждением.
-    console.warn('toggleCompletePlanner был вызван, но его логика перенесена в обработчик чекбокса. Проверьте вызовы.');
-    // Если нужно, чтобы эта функция все же работала, ее нужно переписать
-    // так, чтобы она вызывала addXP и saveData, но это может быть избыточно.
+    if (window.LifePlanner && typeof window.LifePlanner.toggleCompletePlanner === 'function') {
+        window.LifePlanner.toggleCompletePlanner(taskId);
+    } else {
+        console.warn('LifePlanner.toggleCompletePlanner не найден');
+    }
   }
 
   function deleteTaskPlanner(taskId) {
@@ -787,6 +785,9 @@ document.addEventListener('DOMContentLoaded', function() {
         window.LifePlanner.init();
         console.log('LifePlanner инициализирован');
     }
+    
+    // Инициализируем дейлики
+    initializeDefaultDailies();
     
     // Проверяем данные после инициализации
     const data = window.LifePlanner.getData();
@@ -839,6 +840,9 @@ function openTab(event, tabName) {
 
   // Вызов функций рендеринга в зависимости от открытой вкладки
   switch (tabName) {
+      case 'summary':
+          updateRPGOverview();
+          break;
       case 'persona':
           loadPersonaData();
           break;
@@ -1376,12 +1380,15 @@ window.updateRPGNotifications = updateRPGNotifications;
 
 // === RPG OVERVIEW ФУНКЦИИ ===
 function updateRPGOverview() {
+    // Убеждаемся, что дейлики инициализированы
+    initializeDefaultDailies();
+    
     updateRPGCharacterInfo();
     updateRPGXPBar();
     updateRPGQuickStats();
     updateRPGStatusBars();
     updateRPGCurrentMission();
-    updateRPGNotifications();
+    renderRPGDailies();
     renderRPGQuickInventory();
     renderRPGRecentAchievements();
 }
@@ -1631,6 +1638,11 @@ function closeModal() {
 
 function createControls(areas) {
     const container = document.getElementById('lifeBalanceControls');
+    if (!container) {
+        console.warn('Элемент lifeBalanceControls не найден');
+        return;
+    }
+    
     container.innerHTML = '';
     
     areas.forEach((area, index) => {
@@ -1874,5 +1886,532 @@ function deleteHealthEntry(index) {
 
 // Глобальный экспорт новых функций
 window.editHealthStat = editHealthStat;
+
+// ================= ЕЖЕДНЕВНЫЕ ЗАДАЧИ (ДЕЙЛИКИ) =================
+
+// Инициализация дейликов по умолчанию
+function initializeDefaultDailies() {
+    const data = LifePlanner.getData();
+    console.log('Проверка дейликов:', data.dailies);
+    
+    if (!data.dailies || data.dailies.length === 0) {
+        console.log('Инициализируем дейлики по умолчанию...');
+        const defaultDailies = [
+            {
+                id: 'daily_breakfast',
+                title: 'Позавтракать',
+                description: 'Съесть полноценный завтрак с белками и углеводами',
+                xp: 25,
+                icon: 'fas fa-utensils',
+                image: 'https://images.unsplash.com/photo-1494859802809-d069c3b71a8a?w=400&h=300&fit=crop',
+                completed: false,
+                completedDate: null
+            },
+            {
+                id: 'daily_teeth',
+                title: 'Почистить зубы',
+                description: 'Утренняя и вечерняя гигиена полости рта',
+                xp: 15,
+                icon: 'fas fa-toothbrush',
+                image: 'https://images.unsplash.com/photo-1559591935-c6c92c6c2b6e?w=400&h=300&fit=crop',
+                completed: false,
+                completedDate: null
+            },
+            {
+                id: 'daily_exercise',
+                title: 'Сделать зарядку',
+                description: 'Легкая физическая разминка для поддержания тонуса',
+                xp: 30,
+                icon: 'fas fa-dumbbell',
+                image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop',
+                completed: false,
+                completedDate: null
+            },
+            {
+                id: 'daily_water',
+                title: 'Выпить воды',
+                description: 'Поддерживать водный баланс организма',
+                xp: 10,
+                icon: 'fas fa-tint',
+                image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=300&fit=crop',
+                completed: false,
+                completedDate: null
+            },
+            {
+                id: 'daily_reading',
+                title: 'Почитать книгу',
+                description: 'Развивать интеллект и расширять кругозор',
+                xp: 20,
+                icon: 'fas fa-book',
+                image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
+                completed: false,
+                completedDate: null
+            },
+            {
+                id: 'daily_walk',
+                title: 'Прогуляться',
+                description: 'Свежий воздух и легкая физическая активность',
+                xp: 20,
+                icon: 'fas fa-walking',
+                image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+                completed: false,
+                completedDate: null
+            }
+        ];
+        
+        data.dailies = defaultDailies;
+        LifePlanner.saveData();
+        console.log('Дейлики инициализированы и сохранены');
+    } else {
+        console.log('Дейлики уже существуют:', data.dailies.length, 'задач');
+    }
+}
+
+// Рендеринг дейликов
+function renderRPGDailies() {
+    // Убеждаемся, что дейлики инициализированы
+    initializeDefaultDailies();
+    
+    const data = LifePlanner.getData();
+    const dailies = data.dailies || [];
+    const rpgDailies = document.getElementById('rpgDailies');
+    
+    console.log('Рендеринг дейликов:', dailies.length, 'задач');
+    console.log('Элемент rpgDailies:', rpgDailies);
+    
+    if (!rpgDailies) {
+        console.log('Элемент rpgDailies не найден');
+        return;
+    }
+    
+    // Проверяем, нужно ли сбросить дейлики на новый день
+    resetDailiesIfNewDay();
+    
+    if (dailies.length === 0) {
+        console.log('Нет дейликов для отображения');
+        rpgDailies.innerHTML = `
+            <div class="rpg-daily-card" style="text-align: center; color: #888; padding: 2rem; grid-column: 1 / -1;">
+                <div class="rpg-daily-image-placeholder">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+                <h3 style="margin: 1rem 0;">Нет ежедневных задач</h3>
+                <p style="margin-bottom: 1rem;">Добавьте свои первые ежедневные задачи для начала!</p>
+                <button class="rpg-btn rpg-btn-small" onclick="openAddDailyModal()">
+                    <i class="fas fa-plus"></i> Добавить первую задачу
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    console.log('Отображаем дейлики:', dailies);
+    rpgDailies.innerHTML = dailies.map(daily => `
+        <div class="rpg-daily-card ${daily.completed ? 'completed' : ''}" 
+             onclick="toggleDailyComplete('${daily.id}')" 
+             data-daily-id="${daily.id}">
+            
+            <div class="rpg-daily-header">
+                <div class="rpg-daily-title">
+                    <div class="rpg-daily-icon">
+                        <i class="${daily.icon}"></i>
+                    </div>
+                    ${daily.title}
+                </div>
+                <div class="rpg-daily-actions">
+                    <div class="rpg-daily-checkbox" onclick="event.stopPropagation(); toggleDailyComplete('${daily.id}')"></div>
+                    <button class="rpg-daily-edit-btn" onclick="event.stopPropagation(); editDailyTask('${daily.id}')" title="Редактировать">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="rpg-daily-delete-btn" onclick="event.stopPropagation(); deleteDailyTask('${daily.id}')" title="Удалить">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="rpg-daily-image">
+                ${daily.image ? 
+                    `<img src="${daily.image}" alt="${daily.title}" onerror="this.parentElement.innerHTML='<div class=\\'rpg-daily-image-placeholder\\'><i class=\\'${daily.icon}\\'></i></div>'">` : 
+                    `<div class="rpg-daily-image-placeholder"><i class="${daily.icon}"></i></div>`
+                }
+            </div>
+            
+            ${daily.description ? `<div class="rpg-daily-description">${daily.description}</div>` : ''}
+            
+            <div class="rpg-daily-footer">
+                <div class="rpg-daily-xp">
+                    <i class="fas fa-star"></i>
+                    +${daily.xp} XP
+                </div>
+                ${daily.completed ? `<div class="rpg-daily-time">Выполнено ${formatTime(daily.completedDate)}</div>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Переключение состояния выполнения дейлика
+function toggleDailyComplete(dailyId) {
+    // Убеждаемся, что дейлики инициализированы
+    initializeDefaultDailies();
+    
+    const data = LifePlanner.getData();
+    const daily = data.dailies.find(d => d.id === dailyId);
+    
+    if (!daily) return;
+    
+    const dailyCard = document.querySelector(`[data-daily-id="${dailyId}"]`);
+    
+    if (!daily.completed) {
+        // Выполняем задачу
+        daily.completed = true;
+        daily.completedDate = new Date().toISOString();
+        
+        // Добавляем XP
+        addXP(daily.xp, { text: daily.title, type: 'daily' });
+        
+        // Анимация выполнения
+        if (dailyCard) {
+            dailyCard.classList.add('completing');
+            setTimeout(() => {
+                dailyCard.classList.remove('completing');
+            }, 500);
+        }
+        
+        // Показываем уведомление
+        showDailyCompletionNotification(daily);
+    } else {
+        // Отменяем выполнение
+        daily.completed = false;
+        daily.completedDate = null;
+        
+        // Убираем XP (опционально)
+        // addXP(-daily.xp, { text: daily.title, type: 'daily' });
+    }
+    
+    LifePlanner.saveData();
+    renderRPGDailies();
+    updateRPGOverview();
+}
+
+// Сброс дейликов на новый день
+function resetDailiesIfNewDay() {
+    const data = LifePlanner.getData();
+    const dailies = data.dailies || [];
+    const today = new Date().toDateString();
+    const lastReset = data.lastDailiesReset || '';
+    
+    if (lastReset !== today) {
+        dailies.forEach(daily => {
+            daily.completed = false;
+            daily.completedDate = null;
+        });
+        
+        data.lastDailiesReset = today;
+        LifePlanner.saveData();
+    }
+}
+
+// Показ уведомления о выполнении дейлика
+function showDailyCompletionNotification(daily) {
+    const notification = document.createElement('div');
+    notification.className = 'xp-notification daily-completion';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #4CAF50, #66BB6A);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        animation: slideInRight 0.5s ease;
+        max-width: 300px;
+    `;
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <i class="${daily.icon}" style="font-size: 1.2rem;"></i>
+            <strong>${daily.title}</strong>
+        </div>
+        <div style="font-size: 0.9rem; opacity: 0.9;">
+            Задача выполнена! +${daily.xp} XP
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.5s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 500);
+    }, 3000);
+}
+
+// Открытие модального окна добавления дейлика
+function openAddDailyModal() {
+    const modal = document.getElementById('addDailyModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.getElementById('dailyTitle').focus();
+    }
+}
+
+// Закрытие модального окна добавления дейлика
+function closeAddDailyModal() {
+    const modal = document.getElementById('addDailyModal');
+    if (modal) {
+        modal.style.display = 'none';
+        // Очищаем форму
+        document.getElementById('dailyTitle').value = '';
+        document.getElementById('dailyDescription').value = '';
+        document.getElementById('dailyXP').value = '25';
+        document.getElementById('dailyIcon').value = 'fas fa-star';
+        document.getElementById('dailyImage').value = '';
+        
+        // Очищаем данные редактирования
+        const editingDailyId = document.getElementById('editingDailyId');
+        if (editingDailyId) {
+            editingDailyId.value = '';
+        }
+        
+        // Возвращаем оригинальный заголовок и кнопку
+        const modalTitle = document.querySelector('#addDailyModal h3');
+        const modalButton = document.querySelector('#addDailyModal button[onclick="saveDailyTask()"]');
+        
+        if (modalTitle) modalTitle.textContent = 'Добавить ежедневную задачу';
+        if (modalButton) modalButton.textContent = 'Добавить задачу';
+    }
+}
+
+// Сохранение новой ежедневной задачи
+function saveDailyTask() {
+    const title = document.getElementById('dailyTitle').value.trim();
+    const description = document.getElementById('dailyDescription').value.trim();
+    const xp = parseInt(document.getElementById('dailyXP').value) || 25;
+    const icon = document.getElementById('dailyIcon').value;
+    const image = document.getElementById('dailyImage').value.trim();
+    const editingDailyId = document.getElementById('editingDailyId')?.value;
+    
+    if (!title) {
+        alert('Пожалуйста, введите название задачи');
+        return;
+    }
+    
+    // Убеждаемся, что дейлики инициализированы
+    initializeDefaultDailies();
+    
+    const data = LifePlanner.getData();
+    
+    if (editingDailyId) {
+        // Редактирование существующей задачи
+        const dailyIndex = data.dailies.findIndex(d => d.id === editingDailyId);
+        if (dailyIndex !== -1) {
+            data.dailies[dailyIndex] = {
+                ...data.dailies[dailyIndex],
+                title,
+                description,
+                xp,
+                icon,
+                image: image || null
+            };
+        }
+    } else {
+        // Создание новой задачи
+        const newDaily = {
+            id: 'daily_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            title,
+            description,
+            xp,
+            icon,
+            image: image || null,
+            completed: false,
+            completedDate: null
+        };
+        data.dailies.push(newDaily);
+    }
+    
+    LifePlanner.saveData();
+    renderRPGDailies();
+    closeAddDailyModal();
+    
+    // Показываем уведомление
+    const action = editingDailyId ? 'обновлена' : 'добавлена';
+    showNotification(`Ежедневная задача "${title}" ${action}!`, 'success');
+}
+
+// Удаление ежедневной задачи
+function deleteDailyTask(dailyId) {
+    if (confirm('Вы уверены, что хотите удалить эту ежедневную задачу?')) {
+        const data = LifePlanner.getData();
+        data.dailies = data.dailies.filter(d => d.id !== dailyId);
+        LifePlanner.saveData();
+        renderRPGDailies();
+        updateRPGOverview();
+    }
+}
+
+// Редактирование ежедневной задачи
+function editDailyTask(dailyId) {
+    const data = LifePlanner.getData();
+    const daily = data.dailies.find(d => d.id === dailyId);
+    
+    if (!daily) return;
+    
+    // Заполняем форму данными для редактирования
+    document.getElementById('dailyTitle').value = daily.title;
+    document.getElementById('dailyDescription').value = daily.description || '';
+    document.getElementById('dailyXP').value = daily.xp;
+    document.getElementById('dailyIcon').value = daily.icon;
+    document.getElementById('dailyImage').value = daily.image || '';
+    
+    // Создаем скрытое поле для ID редактируемой задачи
+    let editingField = document.getElementById('editingDailyId');
+    if (!editingField) {
+        editingField = document.createElement('input');
+        editingField.type = 'hidden';
+        editingField.id = 'editingDailyId';
+        document.getElementById('addDailyModal').appendChild(editingField);
+    }
+    editingField.value = dailyId;
+    
+    // Обновляем заголовок и кнопку
+    const modalTitle = document.querySelector('#addDailyModal h3');
+    const modalButton = document.querySelector('#addDailyModal button[onclick="saveDailyTask()"]');
+    
+    if (modalTitle) modalTitle.textContent = 'Редактировать ежедневную задачу';
+    if (modalButton) modalButton.textContent = 'Сохранить изменения';
+    
+    // Открываем модальное окно
+    openAddDailyModal();
+}
+
+// Форматирование времени
+function formatTime(dateString) {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    
+    if (diffMins < 1) return 'только что';
+    if (diffMins < 60) return `${diffMins} мин назад`;
+    if (diffHours < 24) return `${diffHours} ч назад`;
+    
+    return date.toLocaleDateString('ru-RU', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+}
+
+// Глобальные функции для доступа из HTML
+window.openAddDailyModal = openAddDailyModal;
+window.closeAddDailyModal = closeAddDailyModal;
+window.saveDailyTask = saveDailyTask;
+window.toggleDailyComplete = toggleDailyComplete;
+window.deleteDailyTask = deleteDailyTask;
+window.editDailyTask = editDailyTask;
+window.addXP = addXP;
+window.createControls = createControls;
+window.initLifeBalanceChart = function() {
+    // Эта функция определена в HTML, поэтому просто вызываем её
+    if (typeof window.initLifeBalanceChart === 'function') {
+        window.initLifeBalanceChart();
+    }
+};
+
+// Инициализация дейликов при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDefaultDailies();
+});
+
+// Добавляем CSS анимации для уведомлений
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Глобальная функция addXP для работы с дейликами
+function addXP(amount, task = null) {
+    if (window.LifePlanner && typeof window.LifePlanner.addXP === 'function') {
+        window.LifePlanner.addXP(amount, task);
+    } else {
+        console.error('LifePlanner.addXP не найден');
+    }
+}
+
+// Функция для показа уведомлений
+function showNotification(message, type = 'info') {
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#F44336' : '#2196F3'};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        max-width: 300px;
+        word-wrap: break-word;
+        animation: slideInRight 0.3s ease;
+    `;
+    notification.textContent = message;
+    
+    // Добавляем в DOM
+    document.body.appendChild(notification);
+    
+    // Удаляем через 3 секунды
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Добавляем CSS анимации для уведомлений
+const notificationStyles = document.createElement('style');
+notificationStyles.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(notificationStyles);
 
 
