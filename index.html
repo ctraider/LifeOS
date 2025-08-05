@@ -155,7 +155,21 @@
                     </div>
                 </div>
 
+                <!-- Ежедневные задачи (Дейлики) -->
+                <div class="rpg-dailies-section">
+                    <h3 class="rpg-section-title">
+                        <i class="fas fa-calendar-check"></i> Ежедневные задачи
+                        <button class="rpg-btn rpg-btn-small" onclick="openAddDailyModal()" style="margin-left: 10px;">
+                            <i class="fas fa-plus"></i> Добавить
+                        </button>
+                    </h3>
+                    <div class="rpg-dailies-grid" id="rpgDailies">
+                        <!-- Ежедневные задачи будут загружены из script.js -->
+                    </div>
+                </div>
+
                 <!-- Уведомления -->
+                <!--
                 <div class="rpg-notifications">
                     <h3 class="rpg-section-title"><i class="fas fa-exclamation-triangle"></i> Уведомления</h3>
                     <div class="rpg-notification-list" id="rpgNotifications">
@@ -165,6 +179,7 @@
                         </div>
                     </div>
                 </div>
+                -->
             </div>
 
             <!-- Правая панель - Инвентарь и достижения -->
@@ -733,6 +748,49 @@
         </div>
     </div>
 
+    <!-- Модальное окно для добавления ежедневной задачи -->
+    <div class="modal" id="addDailyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:100;justify-content:center;align-items:center;">
+        <div class="modal-content" style="background:#ffffff;padding:20px;border-radius:10px;max-width:500px;width:100%;position:relative;">
+            <span class="close-button" onclick="closeAddDailyModal()" style="position:absolute;top:10px;right:15px;font-size:24px;cursor:pointer;">&times;</span>
+            <h3 style="margin-top:0;">Добавить ежедневную задачу</h3>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label for="dailyTitle">Название задачи:</label>
+                <input type="text" id="dailyTitle" placeholder="Например: Позавтракать" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label for="dailyDescription">Описание (необязательно):</label>
+                <textarea id="dailyDescription" placeholder="Дополнительное описание задачи" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;min-height:60px;"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label for="dailyXP">Опыт за выполнение:</label>
+                <input type="number" id="dailyXP" value="25" min="1" max="100" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label for="dailyIcon">Иконка:</label>
+                <select id="dailyIcon" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
+                    <option value="fas fa-utensils">🍽️ Еда</option>
+                    <option value="fas fa-toothbrush">🪥 Гигиена</option>
+                    <option value="fas fa-dumbbell">💪 Спорт</option>
+                    <option value="fas fa-book">📚 Учёба</option>
+                    <option value="fas fa-heart">❤️ Здоровье</option>
+                    <option value="fas fa-home">🏠 Дом</option>
+                    <option value="fas fa-briefcase">💼 Работа</option>
+                    <option value="fas fa-gamepad">🎮 Развлечения</option>
+                    <option value="fas fa-users">👥 Общение</option>
+                    <option value="fas fa-walking">🚶 Прогулка</option>
+                    <option value="fas fa-tint">💧 Вода</option>
+                    <option value="fas fa-star">⭐ Другое</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label for="dailyImage">URL картинки (необязательно):</label>
+                <input type="url" id="dailyImage" placeholder="https://example.com/image.jpg" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
+                <small style="color:#666;font-size:0.8rem;">Оставьте пустым для использования иконки</small>
+            </div>
+            <button onclick="saveDailyTask()" style="background:#4CAF50;color:white;padding:10px 15px;border:none;border-radius:5px;cursor:pointer;width:100%;">Добавить задачу</button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
     <script src="planner.js"></script>
     
@@ -993,6 +1051,7 @@
         });
     </script>
       <!-- ================= ЧАТ-БОТ ================= -->
+  <!-- 
   <div id="chat-container" style="position: fixed; bottom: 20px; right: 20px; width: 300px;
                                     background: #fff; border: 1px solid #ccc; border-radius: 8px;
                                     box-shadow: 0 2px 10px rgba(0,0,0,.1); z-index: 999;">
@@ -1012,10 +1071,12 @@
       <button id="chat-send" style="border:none; padding:0 12px; cursor:pointer;">▶</button>
     </div>
   </div>
+  -->
   <!-- =========================================== -->
 
   <script>
     // Функция для сворачивания/разворачивания чата
+    /*
     let isChatCollapsed = false;
     
     function toggleChatCollapse() {
@@ -1110,6 +1171,7 @@
         e.preventDefault();
       }
     });
+    */
   </script>
 
 </html>
