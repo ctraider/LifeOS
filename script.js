@@ -39,6 +39,11 @@ window.deleteHealthEntry = deleteHealthEntry;
 // ЕДИНСТВЕННАЯ ИНИЦИАЛИЗАЦИЯ DATA
 
 function savePersonaData() {
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.error('LifePlanner не готов для сохранения данных персонажа');
+        return;
+    }
+    
     const personaNameInput = document.getElementById('personaNameInput');
     const personaAgeInput = document.getElementById('personaAgeInput');
     const personaBackstoryInput = document.getElementById('personaBackstoryInput');
@@ -59,16 +64,23 @@ function savePersonaData() {
         traits: personaTraitsInput.value,
         skills: personaSkillsInput.value,
         equipment: personaEquipmentInput.value,
-        avatar: LifePlanner.getData().persona.avatar || '' // Получаем аватар из централизованных данных
+        avatar: window.LifePlanner.getData().persona.avatar || '' // Получаем аватар из централизованных данных
     };
-    LifePlanner.getData().persona = personaDataToSave;
-    LifePlanner.saveData();
+    window.LifePlanner.getData().persona = personaDataToSave;
+    if (window.LifePlanner.saveData) {
+        window.LifePlanner.saveData();
+    }
     alert('Данные персонажа сохранены!');
     loadPersonaData();
 }
 
 function loadPersonaData() {
-    const personaDataFromStorage = LifePlanner.getData().persona;
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.log('LifePlanner не готов для загрузки данных персонажа');
+        return;
+    }
+    
+    const personaDataFromStorage = window.LifePlanner.getData().persona;
     console.log('Загруженные данные персонажа:', personaDataFromStorage); // Отладочное сообщение
     
     // Определяем имя (из сохраненных данных или пустое)
@@ -98,7 +110,7 @@ function loadPersonaData() {
             avatarDisplay.style.backgroundImage = `url(${personaDataFromStorage.avatar})`;
             avatarDisplay.textContent = '';
         } else {
-            avatarDisplay.style.backgroundImage = 'none';
+            avatarDisplay.style.backgroundImage = '';
             avatarDisplay.textContent = 'Аватар';
         }
     }
@@ -131,8 +143,14 @@ function renderInventory() {
         console.warn("Контейнер инвентаря 'inventoryGridContainer' не найден. Рендер невозможен.");
         return;
     }
+    
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.log('LifePlanner не готов для рендера инвентаря');
+        return;
+    }
+    
     inventoryGridContainer.innerHTML = '';
-    const inventoryItems = LifePlanner.getData().inventoryItems;
+    const inventoryItems = window.LifePlanner.getData().inventoryItems;
     for (let i = 0; i < MAX_INVENTORY_SLOTS; i++) {
         const cell = document.createElement('div');
         cell.classList.add('inventory-cell');
@@ -156,7 +174,11 @@ function renderInventory() {
 }
 
 function handleDragStart(e) {
-    const inventoryItems = LifePlanner.getData().inventoryItems;
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const inventoryItems = window.LifePlanner.getData().inventoryItems;
     draggedItem = inventoryItems.find(item => item.slot == this.dataset.slotId);
     if(draggedItem) { // Убедимся, что элемент действительно есть
     e.dataTransfer.effectAllowed = 'move';
@@ -183,7 +205,11 @@ function handleDrop(e) {
     if (!sourceSlotIdText) return; // Если нет ID источника, выходим
     const sourceSlotId = parseInt(sourceSlotIdText);
 
-    const inventoryItems = LifePlanner.getData().inventoryItems;
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const inventoryItems = window.LifePlanner.getData().inventoryItems;
     if (draggedItem && draggedItem.slot === sourceSlotId && targetSlotId !== sourceSlotId) {
         const targetItem = inventoryItems.find(item => item.slot === targetSlotId);
             const sourceItemIndex = inventoryItems.findIndex(item => item.id === draggedItem.id);
@@ -199,7 +225,9 @@ function handleDrop(e) {
                 inventoryItems[sourceItemIndex].slot = targetSlotId;
             }
         }
-        LifePlanner.saveData(); // Сохраняем через LifePlanner
+        if (window.LifePlanner.saveData) {
+            window.LifePlanner.saveData(); // Сохраняем через LifePlanner
+        }
         renderInventory();
     }
     this.style.opacity = '1';
@@ -212,7 +240,11 @@ function handleDragEnd(e) {
 }
 
 function addItemToInventory(name, quantity = 1, type = 'resources') {
-    const inventoryItems = LifePlanner.getData().inventoryItems;
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const inventoryItems = window.LifePlanner.getData().inventoryItems;
     if (inventoryItems.length >= MAX_INVENTORY_SLOTS && !inventoryItems.find(i => i.name === name)) {
         alert('Инвентарь полон!');
         return;
@@ -228,19 +260,19 @@ function addItemToInventory(name, quantity = 1, type = 'resources') {
                 break;
             }
         }
-        if(newSlot === -1) {
-             alert('Нет свободных слотов для нового типа предмета!');
-             return;
+        if(newSlot !== -1){
+            inventoryItems.push({
+                id: Date.now() + Math.random(),
+                name: name,
+                quantity: quantity,
+                type: type,
+                slot: newSlot
+            });
         }
-        inventoryItems.push({ 
-            id: Date.now() + Math.random().toString(36).substr(2, 9), // Более уникальный ID
-            name: name, 
-            quantity: quantity, 
-            slot: newSlot, 
-            type: type 
-        });
     }
-    LifePlanner.saveData(); // Сохраняем через LifePlanner
+    if (window.LifePlanner.saveData) {
+        window.LifePlanner.saveData();
+    }
     renderInventory();
 }
 
@@ -269,12 +301,21 @@ function addItemToInventoryPrompt() {
 }
 
 function saveInventory() {
-    LifePlanner.saveData(); // Сохраняем через LifePlanner
-    alert('Инвентарь сохранен!');
+    if (window.LifePlanner && window.LifePlanner.saveData) {
+        window.LifePlanner.saveData(); // Сохраняем через LifePlanner
+        alert('Инвентарь сохранен!');
+    } else {
+        console.error('LifePlanner.saveData не доступен');
+    }
 }
 
 function loadInventory() {
-    const inventoryItems = LifePlanner.getData().inventoryItems;
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.log('LifePlanner не готов для загрузки инвентаря');
+        return;
+    }
+    
+    const inventoryItems = window.LifePlanner.getData().inventoryItems;
     renderInventory();
 }
 
@@ -283,7 +324,10 @@ function handleContextMenu(e) {
     const contextMenu = document.getElementById('itemContextMenu');
     const targetCell = e.target.closest('.inventory-cell');
     if (targetCell && targetCell.dataset.itemId) {
-        contextMenuItem = LifePlanner.getData().inventoryItems.find(item => item.id === targetCell.dataset.itemId);
+        if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+            return;
+        }
+        contextMenuItem = window.LifePlanner.getData().inventoryItems.find(item => item.id === targetCell.dataset.itemId);
         if (contextMenuItem) {
             contextMenu.style.display = 'block';
             contextMenu.style.left = e.pageX + 'px';
@@ -300,7 +344,11 @@ function hideContextMenu() {
 }
 
 function filterItems(type) {
-    const inventoryItems = LifePlanner.getData().inventoryItems;
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const inventoryItems = window.LifePlanner.getData().inventoryItems;
     const filteredItems = type === 'all' ? inventoryItems : inventoryItems.filter(item => item.type === type);
     
     // Очищаем текущий инвентарь
@@ -340,8 +388,13 @@ function filterItems(type) {
 function deleteContextItem() {
     if (contextMenuItem) {
         if (confirm(`Вы уверены, что хотите удалить ${contextMenuItem.name}?`)) {
-            LifePlanner.getData().inventoryItems = LifePlanner.getData().inventoryItems.filter(item => item.id !== contextMenuItem.id);
-            LifePlanner.saveData();
+            if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+                return;
+            }
+            window.LifePlanner.getData().inventoryItems = window.LifePlanner.getData().inventoryItems.filter(item => item.id !== contextMenuItem.id);
+            if (window.LifePlanner.saveData) {
+                window.LifePlanner.saveData();
+            }
             renderInventory();
             hideContextMenu();
         }
@@ -353,7 +406,9 @@ function editContextItemName() {
         const newName = prompt('Введите новое название:', contextMenuItem.name);
         if (newName !== null && newName.trim() !== '') {
             contextMenuItem.name = newName.trim();
-            LifePlanner.saveData();
+            if (window.LifePlanner && window.LifePlanner.saveData) {
+                window.LifePlanner.saveData();
+            }
             renderInventory();
             hideContextMenu();
         }
@@ -917,10 +972,69 @@ function importDataFile(event) {
   reader.readAsText(file);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Убираем localStorage.clear() чтобы данные сохранялись между сессиями
+document.addEventListener('DOMContentLoaded', () => {
     console.log('Инициализация LifeOS...');
+    
+    // Получаем элементы планировщика
+    const newTaskInput = document.getElementById('new-task');
+    const importanceSel = document.getElementById('importance');
+    const urgencySel = document.getElementById('urgency');
+    const prioritySelect = document.getElementById('priority');
+    const dueDateInput = document.getElementById('due-date');
+    const addTaskButton = document.getElementById('add-task');
+    const taskList = document.getElementById('task-list');
+    const showAllButton = document.getElementById('show-all');
+    const showActiveButton = document.getElementById('show-active');
+    const showCompletedButton = document.getElementById('show-completed');
+    const xpSpan = document.getElementById('xp');
+    const levelSpan = document.getElementById('level');
+    const currencySpan = document.getElementById('currency');
+    const hpSpan = document.getElementById('hp');
+    const totalTasksEl = document.getElementById('total-tasks');
+    const completedTasksEl = document.getElementById('completed-tasks');
+    const activeTasksEl = document.getElementById('active-tasks');
+    const toggleThemeButton = document.getElementById('toggle-theme');
+    const virtualCurrencyInput = document.getElementById('virtual-currency-input');
+    const convertCurrencyBtn = document.getElementById('convert-currency-btn');
+    const currencyResult = document.getElementById('currency-result');
+    const conversionList = document.getElementById('conversion-list');
+    const clearHistoryBtn = document.getElementById('clear-history');
+    const savingsGoalInput = document.getElementById('savings-goal');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const prevMonthBtn = document.getElementById('prev-month');
+    const nextMonthBtn = document.getElementById('next-month');
+    const currentMonthYear = document.getElementById('current-month-year');
+    const calendarDays = document.getElementById('calendar-days');
+    const taskModal = document.getElementById('task-modal');
+    const modalDate = document.getElementById('modal-date');
+    const modalTaskList = document.getElementById('modal-task-list');
+    const modalClose = document.querySelector('.planner-task-modal-close');
+    const achievementNameInput = document.getElementById('achievement-name');
+    const achievementDescInput = document.getElementById('achievement-desc');
+    const addAchievementBtn = document.getElementById('add-achievement-btn');
 
+    // Навешиваем обработчики событий только если элементы существуют
+    if (addTaskButton) addTaskButton.addEventListener('click', addTask);
+    if (newTaskInput) newTaskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
+    if (showAllButton) showAllButton.addEventListener('click', () => { filterCompleted = null; renderTasks(); });
+    if (showActiveButton) showActiveButton.addEventListener('click', () => { filterCompleted = false; renderTasks(); });
+    if (showCompletedButton) showCompletedButton.addEventListener('click', () => { filterCompleted = true; renderTasks(); });
+    if (toggleThemeButton) toggleThemeButton.addEventListener('click', toggleTheme);
+    if (convertCurrencyBtn) convertCurrencyBtn.addEventListener('click', convertCurrency);
+    if (virtualCurrencyInput) virtualCurrencyInput.addEventListener('keypress', e => { if (e.key === 'Enter') convertCurrency(); });
+    if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearConversionHistory);
+    if (savingsGoalInput) savingsGoalInput.addEventListener('keypress', e => { if (e.key === 'Enter') setSavingsGoal(); });
+    if (savingsGoalInput) savingsGoalInput.addEventListener('change', setSavingsGoal);
+    if (prevMonthBtn) prevMonthBtn.addEventListener('click', prevMonth);
+    if (nextMonthBtn) nextMonthBtn.addEventListener('click', nextMonth);
+    if (modalClose) modalClose.addEventListener('click', closeModal);
+    if (taskModal) taskModal.addEventListener('click', e => { if (e.target === taskModal) closeModal(); });
+    if (addAchievementBtn) addAchievementBtn.addEventListener('click', addUserAchievement);
+    if (achievementNameInput) achievementNameInput.addEventListener('keypress', e => { if (e.key === 'Enter') addUserAchievement(); });
+    if (achievementDescInput) achievementDescInput.addEventListener('keypress', e => { if (e.key === 'Enter') addUserAchievement(); });
+
+    // Инициализация основных компонентов LifeOS
     needs = loadNeeds();
     updateNeedsUI();
     setInterval(degradeNeeds, 60000);
@@ -929,25 +1043,21 @@ document.addEventListener('DOMContentLoaded', function() {
     loadInventory();
     renderHealthStats();
     renderHealthLog();
-    if (window.LifePlanner && typeof window.LifePlanner.init === 'function') {
-        window.LifePlanner.init();
-        // Дополнительный вызов гарантирует, что задачи отрисуются сразу после загрузки
-        if (typeof window.LifePlanner.renderTasks === 'function') {
-            window.LifePlanner.renderTasks();
-        }
-        console.log('LifePlanner инициализирован');
-    }
+    
+    // Инициализация LifePlanner
+    // if (window.LifePlanner && typeof window.LifePlanner.init === 'function') {
+    //   window.LifePlanner.init();
+    //   // Дополнительный вызов гарантирует, что задачи отрисуются сразу после загрузки
+    //   if (typeof window.LifePlanner.renderTasks === 'function') {
+    //     window.LifePlanner.renderTasks();
+    //   }
+    //   console.log('LifePlanner инициализирован');
+    // }
 
     // Проверяем данные после инициализации
     const data = window.LifePlanner.getData();
     console.log('Данные LifePlanner после инициализации:', data);
     console.log('XP:', data.xp, 'Уровень:', data.level);
-    
-    // Убираем тестовое добавление XP, так как теперь данные загружаются
-    // if (data.xp === 0) {
-    //     console.log('Добавляем тестовый XP для демонстрации...');
-    //     window.LifePlanner.addXP(25); // Добавляем 25 XP для тестирования
-    // }
     
     updateGamificationUI(); // Теперь updateGamificationUI будет использовать LifePlanner.getData()
     
@@ -956,29 +1066,60 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Обновляем RPG обзор при переключении на вкладку "Обзор"
     const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                const summaryTab = document.getElementById('summary');
-                if (summaryTab && summaryTab.classList.contains('active')) {
-                    updateRPGOverview();
-                }
-            }
-        });
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          const summaryTab = document.getElementById('summary');
+          if (summaryTab && summaryTab.classList.contains('active')) {
+            updateRPGOverview();
+          }
+        }
+      });
     });
     
     const summaryTab = document.getElementById('summary');
     if (summaryTab) {
-        observer.observe(summaryTab, { attributes: true });
+      observer.observe(summaryTab, { attributes: true });
     }
 
+    // Обработчики для экспорта/импорта данных
     const exportBtn = document.getElementById('exportDataBtn');
     const importBtn = document.getElementById('importDataBtn');
     const importInput = document.getElementById('importDataInput');
     if (exportBtn) exportBtn.addEventListener('click', exportData);
     if (importBtn && importInput) {
-        importBtn.addEventListener('click', () => importInput.click());
-        importInput.addEventListener('change', importDataFile);
+      importBtn.addEventListener('click', () => importInput.click());
+      importInput.addEventListener('change', importDataFile);
     }
+
+    // Первичный рендер планировщика
+    // renderTasks();
+    // generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    // updateConversionHistory();
+    // updateGamificationUI();
+    // renderAchievements();
+    // updateProgress();
+    
+    // Дополнительная инициализация дейликов с небольшой задержкой для гарантии готовности DOM
+    setTimeout(() => {
+      // Проверяем, что LifePlanner готов
+      if (window.LifePlanner && typeof window.LifePlanner.getData === 'function') {
+        initializeDefaultDailies();
+        renderRPGDailies();
+        console.log('Дейлики инициализированы и отрендерены');
+      } else {
+        console.log('LifePlanner еще не готов, повторяем попытку...');
+        // Повторяем попытку через еще 200мс
+        setTimeout(() => {
+          if (window.LifePlanner && typeof window.LifePlanner.getData === 'function') {
+            initializeDefaultDailies();
+            renderRPGDailies();
+            console.log('Дейлики инициализированы и отрендерены (повторная попытка)');
+          } else {
+            console.error('LifePlanner не удалось инициализировать');
+          }
+        }, 200);
+      }
+    }, 300);
 });
 
 // Удалить/закомментировать все старые функции и переменные для задач LifeOS
@@ -1062,6 +1203,11 @@ function filterHistory(type) {
   alert('Фильтрация истории по: ' + type + ' (заглушка)');
 }
 function addHealthEntry() {
+  if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+      console.error('LifePlanner не готов для добавления записи о здоровье');
+      return;
+  }
+  
   const sleepInput = document.getElementById('sleep');
   const waterInput = document.getElementById('water');
   const healthNoteInput = document.getElementById('healthNote');
@@ -1082,8 +1228,10 @@ function addHealthEntry() {
       note: healthNote
   };
 
-  LifePlanner.getData().health.push(newEntry);
-  LifePlanner.saveData();
+  window.LifePlanner.getData().health.push(newEntry);
+  if (window.LifePlanner.saveData) {
+      window.LifePlanner.saveData();
+  }
   renderHealthLog();
   closeHealthLogModal();
 
@@ -1129,11 +1277,16 @@ function openWorkSubTab(event, subTabName) {
 }
 
 function renderWorkTasks() {
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.log('LifePlanner не готов для рендера рабочих задач');
+        return;
+    }
+    
     const taskList = document.getElementById('taskList');
     if (!taskList) return;
 
     taskList.innerHTML = '';
-    const tasks = LifePlanner.getData().tasks; // Используем задачи из LifePlanner
+    const tasks = window.LifePlanner.getData().tasks; // Используем задачи из LifePlanner
 
     if (tasks.length === 0) {
         taskList.innerHTML = '<p class="placeholder-text">Задачи не добавлены.</p>';
@@ -1148,14 +1301,18 @@ function renderWorkTasks() {
             ${task.text} (Приоритет: ${task.priority})
             <button onclick="window.setTaskPriority('${task.id}', 'up')" class="task-priority-button task-priority-up-button">↑</button>
             <button onclick="window.setTaskPriority('${task.id}', 'down')" class="task-priority-button task-priority-down-button">↓</button>
-            <button onclick="LifePlanner.deleteTask('${task.id}')" class="task-priority-button task-delete-button">Удалить</button>
+            <button onclick="window.LifePlanner.deleteTask('${task.id}')" class="task-priority-button task-delete-button">Удалить</button>
         `;
         taskList.appendChild(li);
     });
 }
 
 function setTaskPriority(taskId, direction) {
-    const tasks = LifePlanner.getData().tasks;
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const tasks = window.LifePlanner.getData().tasks;
     const taskIndex = tasks.findIndex(task => task.id === taskId);
 
     if (taskIndex === -1) return;
@@ -1212,10 +1369,15 @@ function toggleWorkTabTask(taskId) {
 }
 
 function renderDailySchedule() {
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.log('LifePlanner не готов для рендера расписания');
+        return;
+    }
+    
     const scheduleContainer = document.getElementById('dailyScheduleContainer');
     if (!scheduleContainer) return;
 
-    const scheduleData = LifePlanner.getData().schedule || {};
+    const scheduleData = window.LifePlanner.getData().schedule || {};
     scheduleContainer.innerHTML = '';
 
     for (let i = 0; i < 24; i++) {
@@ -1242,8 +1404,10 @@ function renderDailySchedule() {
                 scheduleData[i] = { activity: activity.trim(), type: (type || 'work').trim() };
             }
 
-            LifePlanner.getData().schedule = scheduleData;
-            LifePlanner.saveData();
+            window.LifePlanner.getData().schedule = scheduleData;
+            if (window.LifePlanner.saveData) {
+                window.LifePlanner.saveData();
+            }
             renderDailySchedule();
         };
 
@@ -1262,11 +1426,16 @@ function renderWorkPriorities() {
 }
 
 function renderJournalEvents() {
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.log('LifePlanner не готов для рендера журнала событий');
+        return;
+    }
+    
     const journalEntryList = document.getElementById('journalEntryList');
     if (!journalEntryList) return;
 
     journalEntryList.innerHTML = '';
-    const journalEvents = LifePlanner.getData().journalEvents || []; // Добавим новое поле в data
+    const journalEvents = window.LifePlanner.getData().journalEvents || []; // Добавим новое поле в data
 
     if (journalEvents.length === 0) {
         journalEntryList.innerHTML = '<li class="placeholder-text">Записей в журнале нет.</li>';
@@ -1300,13 +1469,17 @@ function getJournalEventTypeColor(type) {
 }
 
 function filterJournalEvents() {
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
     const dateFilter = document.getElementById('journalDateFilter').value;
     const typeFilter = document.getElementById('journalTypeFilter').value;
     const journalEntryList = document.getElementById('journalEntryList');
     if (!journalEntryList) return;
 
     journalEntryList.innerHTML = '';
-    const allEvents = LifePlanner.getData().journalEvents || [];
+    const allEvents = window.LifePlanner.getData().journalEvents || [];
 
     const filteredEvents = allEvents.filter(entry => {
         const matchesDate = dateFilter ? entry.date === dateFilter : true;
@@ -1566,7 +1739,11 @@ function updateRPGOverview() {
 }
 
 function updateRPGCharacterInfo() {
-    const personaData = LifePlanner.getData().persona;
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const personaData = window.LifePlanner.getData().persona;
     const rpgCharacterName = document.getElementById('rpgCharacterName');
     const rpgAvatar = document.getElementById('rpgAvatar');
     
@@ -1581,10 +1758,14 @@ function updateRPGCharacterInfo() {
 }
 
 function updateRPGXPBar() {
-    const data = LifePlanner.getData();
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const data = window.LifePlanner.getData();
     const currentXP = data.xp || 0;
     const currentLevel = data.level || 1;
-    const requiredXP = LifePlanner.getRequiredXPForLevel ? LifePlanner.getRequiredXPForLevel(currentLevel) : 100;
+    const requiredXP = window.LifePlanner.getRequiredXPForLevel ? window.LifePlanner.getRequiredXPForLevel(currentLevel) : 100;
     
     const rpgLevel = document.getElementById('rpgLevel');
     const rpgXpFill = document.getElementById('rpgXpFill');
@@ -1600,7 +1781,11 @@ function updateRPGXPBar() {
 }
 
 function updateRPGQuickStats() {
-    const data = LifePlanner.getData();
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const data = window.LifePlanner.getData();
     const tasks = data.tasks || [];
     const completedTasks = tasks.filter(t => t.completed).length;
     
@@ -1636,7 +1821,11 @@ function updateRPGStatusBars() {
 }
 
 function updateRPGCurrentMission() {
-    const data = LifePlanner.getData();
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const data = window.LifePlanner.getData();
     const tasks = data.tasks || [];
     const activeTasks = tasks.filter(t => !t.completed);
     
@@ -1742,7 +1931,12 @@ function updateRPGNotifications() {
 }
 
 function renderRPGQuickInventory() {
-    const inventoryItems = LifePlanner.getData().inventoryItems || [];
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.log('LifePlanner не готов для рендера быстрого инвентаря');
+        return;
+    }
+    
+    const inventoryItems = window.LifePlanner.getData().inventoryItems || [];
     const rpgQuickInventory = document.getElementById('rpgQuickInventory');
     
     if (!rpgQuickInventory) return;
@@ -1769,7 +1963,12 @@ function renderRPGQuickInventory() {
 }
 
 function renderRPGRecentAchievements() {
-    const achievements = LifePlanner.getData().achievements || [];
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.log('LifePlanner не готов для рендера достижений');
+        return;
+    }
+    
+    const achievements = window.LifePlanner.getData().achievements || [];
     const rpgRecentAchievements = document.getElementById('rpgRecentAchievements');
     
     if (!rpgRecentAchievements) return;
@@ -1862,6 +2061,11 @@ function clearHealthStatForm() {
 }
 
 function saveHealthStat() {
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.error('LifePlanner не готов для работы с характеристиками здоровья');
+        return;
+    }
+    
     const name = document.getElementById('statName').value.trim();
     const value = document.getElementById('statValue').value.trim();
     const unit = document.getElementById('statUnit').value.trim();
@@ -1875,7 +2079,7 @@ function saveHealthStat() {
     }
 
     const healthStat = {
-        id: editingIndex === -1 ? Date.now() : LifePlanner.getData().healthStats[editingIndex].id,
+        id: editingIndex === -1 ? Date.now() : window.LifePlanner.getData().healthStats[editingIndex].id,
         name: name,
         value: value,
         unit: unit,
@@ -1886,13 +2090,15 @@ function saveHealthStat() {
 
     if (editingIndex === -1) {
         // Добавляем новую характеристику
-        LifePlanner.getData().healthStats.push(healthStat);
+        window.LifePlanner.getData().healthStats.push(healthStat);
     } else {
         // Редактируем существующую
-        LifePlanner.getData().healthStats[editingIndex] = healthStat;
+        window.LifePlanner.getData().healthStats[editingIndex] = healthStat;
     }
 
-    LifePlanner.saveData();
+    if (window.LifePlanner.saveData) {
+        window.LifePlanner.saveData();
+    }
     renderHealthStats();
     closeHealthStatModal();
 }
@@ -1901,7 +2107,7 @@ function renderHealthStats() {
     const container = document.getElementById('health-stats-container');
     if (!container) return;
 
-    const healthStats = LifePlanner.getData().healthStats || [];
+    const healthStats = window.LifePlanner.getData().healthStats || [];
     container.innerHTML = '';
 
     if (healthStats.length === 0) {
@@ -1978,7 +2184,7 @@ function renderHealthStats() {
 }
 
 function editHealthStat(index) {
-    const healthStat = LifePlanner.getData().healthStats[index];
+    const healthStat = window.LifePlanner.getData().healthStats[index];
     if (!healthStat) return;
 
     document.getElementById('healthStatModalTitle').textContent = 'Редактировать характеристику здоровья';
@@ -1993,21 +2199,32 @@ function editHealthStat(index) {
 }
 
 function deleteHealthStat(index) {
-    const healthStat = LifePlanner.getData().healthStats[index];
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const healthStat = window.LifePlanner.getData().healthStats[index];
     if (!healthStat) return;
 
     if (confirm(`Вы уверены, что хотите удалить характеристику "${healthStat.name}"?`)) {
-        LifePlanner.getData().healthStats.splice(index, 1);
-        LifePlanner.saveData();
+        window.LifePlanner.getData().healthStats.splice(index, 1);
+        if (window.LifePlanner.saveData) {
+            window.LifePlanner.saveData();
+        }
         renderHealthStats();
     }
 }
 
 function renderHealthLog() {
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.log('LifePlanner не готов для рендера журнала здоровья');
+        return;
+    }
+    
     const healthList = document.getElementById('healthList');
     if (!healthList) return;
 
-    const healthEntries = LifePlanner.getData().health || [];
+    const healthEntries = window.LifePlanner.getData().health || [];
     healthList.innerHTML = '';
 
     if (healthEntries.length === 0) {
@@ -2046,12 +2263,18 @@ function renderHealthLog() {
 }
 
 function deleteHealthEntry(index) {
-    const healthEntry = LifePlanner.getData().health[index];
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const healthEntry = window.LifePlanner.getData().health[index];
     if (!healthEntry) return;
 
     if (confirm('Вы уверены, что хотите удалить эту запись о здоровье?')) {
-        LifePlanner.getData().health.splice(index, 1);
-        LifePlanner.saveData();
+        window.LifePlanner.getData().health.splice(index, 1);
+        if (window.LifePlanner.saveData) {
+            window.LifePlanner.saveData();
+        }
         renderHealthLog();
     }
 }
@@ -2063,7 +2286,12 @@ window.editHealthStat = editHealthStat;
 
 // Инициализация дейликов по умолчанию
 function initializeDefaultDailies() {
-    const data = LifePlanner.getData();
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.log('LifePlanner не готов для инициализации дейликов');
+        return;
+    }
+    
+    const data = window.LifePlanner.getData();
     console.log('Проверка дейликов:', data.dailies);
     
     if (!data.dailies || data.dailies.length === 0) {
@@ -2132,7 +2360,9 @@ function initializeDefaultDailies() {
         ];
         
         data.dailies = defaultDailies;
-        LifePlanner.saveData();
+        if (window.LifePlanner.saveData) {
+            window.LifePlanner.saveData();
+        }
         console.log('Дейлики инициализированы и сохранены');
     } else {
         console.log('Дейлики уже существуют:', data.dailies.length, 'задач');
@@ -2144,8 +2374,9 @@ function renderRPGDailies() {
     // Убеждаемся, что дейлики инициализированы
     initializeDefaultDailies();
     
-    const data = LifePlanner.getData();
-    const dailies = data.dailies || [];
+    const dailies = window.LifePlanner && typeof window.LifePlanner.getDailies === 'function' 
+        ? window.LifePlanner.getDailies() 
+        : [];
     const rpgDailies = document.getElementById('rpgDailies');
     
     console.log('Рендеринг дейликов:', dailies.length, 'задач');
@@ -2225,7 +2456,12 @@ function toggleDailyComplete(dailyId) {
     // Убеждаемся, что дейлики инициализированы
     initializeDefaultDailies();
     
-    const data = LifePlanner.getData();
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.error('LifePlanner не готов для работы с дейликами');
+        return;
+    }
+    
+    const data = window.LifePlanner.getData();
     const daily = data.dailies.find(d => d.id === dailyId);
     
     if (!daily) return;
@@ -2259,14 +2495,20 @@ function toggleDailyComplete(dailyId) {
         // addXP(-daily.xp, { text: daily.title, type: 'daily' });
     }
     
-    LifePlanner.saveData();
+    if (window.LifePlanner.saveData) {
+        window.LifePlanner.saveData();
+    }
     renderRPGDailies();
     updateRPGOverview();
 }
 
 // Сброс дейликов на новый день
 function resetDailiesIfNewDay() {
-    const data = LifePlanner.getData();
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        return;
+    }
+    
+    const data = window.LifePlanner.getData();
     const dailies = data.dailies || [];
     const today = new Date().toDateString();
     const lastReset = data.lastDailiesReset || '';
@@ -2278,7 +2520,9 @@ function resetDailiesIfNewDay() {
         });
         
         data.lastDailiesReset = today;
-        LifePlanner.saveData();
+        if (window.LifePlanner.saveData) {
+            window.LifePlanner.saveData();
+        }
     }
 }
 
@@ -2372,10 +2616,15 @@ function saveDailyTask() {
         return;
     }
     
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.error('LifePlanner не готов для работы с дейликами');
+        return;
+    }
+    
     // Убеждаемся, что дейлики инициализированы
     initializeDefaultDailies();
     
-    const data = LifePlanner.getData();
+    const data = window.LifePlanner.getData();
     
     if (editingDailyId) {
         // Редактирование существующей задачи
@@ -2405,7 +2654,9 @@ function saveDailyTask() {
         data.dailies.push(newDaily);
     }
     
-    LifePlanner.saveData();
+    if (window.LifePlanner.saveData) {
+        window.LifePlanner.saveData();
+    }
     renderRPGDailies();
     closeAddDailyModal();
     
@@ -2417,9 +2668,17 @@ function saveDailyTask() {
 // Удаление ежедневной задачи
 function deleteDailyTask(dailyId) {
     if (confirm('Вы уверены, что хотите удалить эту ежедневную задачу?')) {
-        const data = LifePlanner.getData();
+        if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+            console.error('LifePlanner не готов для работы с дейликами');
+            return;
+        }
+        
+        const data = window.LifePlanner.getData();
         data.dailies = data.dailies.filter(d => d.id !== dailyId);
-        LifePlanner.saveData();
+        
+        if (window.LifePlanner.saveData) {
+            window.LifePlanner.saveData();
+        }
         renderRPGDailies();
         updateRPGOverview();
     }
@@ -2427,7 +2686,12 @@ function deleteDailyTask(dailyId) {
 
 // Редактирование ежедневной задачи
 function editDailyTask(dailyId) {
-    const data = LifePlanner.getData();
+    if (!window.LifePlanner || typeof window.LifePlanner.getData !== 'function') {
+        console.error('LifePlanner не готов для работы с дейликами');
+        return;
+    }
+    
+    const data = window.LifePlanner.getData();
     const daily = data.dailies.find(d => d.id === dailyId);
     
     if (!daily) return;
@@ -2497,9 +2761,9 @@ window.initLifeBalanceChart = function() {
 };
 
 // Инициализация дейликов при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
-    initializeDefaultDailies();
-});
+// document.addEventListener('DOMContentLoaded', function() {
+//     initializeDefaultDailies();
+// });
 
 // Добавляем CSS анимации для уведомлений
 const style = document.createElement('style');

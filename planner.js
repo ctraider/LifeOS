@@ -18,7 +18,8 @@ window.LifePlanner = (function() {
     persona: {}, // Для данных персоны
     inventoryItems: [], // Для данных инвентаря
     journalEvents: [], // Для журнала событий
-    medicalHistory: [] // Для истории болезней
+    medicalHistory: [], // Для истории болезней
+    dailies: [] // Для дейликов
   };
   data.tasks = data.tasks || [];
   data.achievements = data.achievements || [];
@@ -31,6 +32,7 @@ window.LifePlanner = (function() {
   data.inventoryItems = data.inventoryItems || [];
   data.journalEvents = data.journalEvents || [];
   data.medicalHistory = data.medicalHistory || [];
+  data.dailies = data.dailies || [];
   let filterCompleted = null;
   let currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
@@ -724,6 +726,75 @@ window.LifePlanner = (function() {
     data.inventoryItems = data.inventoryItems || [];
     data.journalEvents = data.journalEvents || [];
     data.medicalHistory = data.medicalHistory || [];
+    data.dailies = data.dailies || [];
+    
+    // Инициализируем дейлики по умолчанию, если их нет
+    if (!data.dailies || data.dailies.length === 0) {
+      data.dailies = [
+        {
+          id: 'daily_breakfast',
+          title: 'Позавтракать',
+          description: 'Съесть полноценный завтрак с белками и углеводами',
+          xp: 25,
+          icon: 'fas fa-utensils',
+          image: 'https://images.unsplash.com/photo-1494859802809-d069c3b71a8a?w=400&h=300&fit=crop',
+          completed: false,
+          completedDate: null
+        },
+        {
+          id: 'daily_teeth',
+          title: 'Почистить зубы',
+          description: 'Утренняя и вечерняя гигиена полости рта',
+          xp: 15,
+          icon: 'fas fa-toothbrush',
+          image: 'https://images.unsplash.com/photo-1559591935-c6c92c6c2b6e?w=400&h=300&fit=crop',
+          completed: false,
+          completedDate: null
+        },
+        {
+          id: 'daily_exercise',
+          title: 'Сделать зарядку',
+          description: 'Легкая физическая разминка для поддержания тонуса',
+          xp: 30,
+          icon: 'fas fa-dumbbell',
+          image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop',
+          completed: false,
+          completedDate: null
+        },
+        {
+          id: 'daily_water',
+          title: 'Выпить воды',
+          description: 'Поддерживать водный баланс организма',
+          xp: 10,
+          icon: 'fas fa-tint',
+          image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=300&fit=crop',
+          completed: false,
+          completedDate: null
+        },
+        {
+          id: 'daily_reading',
+          title: 'Почитать книгу',
+          description: 'Развивать интеллект и расширять кругозор',
+          xp: 20,
+          icon: 'fas fa-book',
+          image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
+          completed: false,
+          completedDate: null
+        },
+        {
+          id: 'daily_walk',
+          title: 'Прогуляться',
+          description: 'Свежий воздух и легкая физическая активность',
+          xp: 20,
+          icon: 'fas fa-walking',
+          image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+          completed: false,
+          completedDate: null
+        }
+      ];
+      saveData();
+    }
+    
     // Навешиваем обработчики событий только после загрузки DOM
     const addTaskButton = document.getElementById('add-task');
     const newTaskInput = document.getElementById('new-task');
@@ -767,6 +838,26 @@ window.LifePlanner = (function() {
     renderAchievements();
     updateProgress();
     updateStats(data.tasks);
+    
+    // Сбрасываем дейлики на новый день, если нужно
+    resetDailiesIfNewDay();
+  }
+  
+  // Функция для сброса дейликов на новый день
+  function resetDailiesIfNewDay() {
+    const dailies = data.dailies || [];
+    const today = new Date().toDateString();
+    const lastReset = data.lastDailiesReset || '';
+    
+    if (lastReset !== today) {
+      dailies.forEach(daily => {
+        daily.completed = false;
+        daily.completedDate = null;
+      });
+      
+      data.lastDailiesReset = today;
+      saveData();
+    }
   }
 
   // Экспортируем только нужные методы
@@ -777,6 +868,7 @@ window.LifePlanner = (function() {
     saveData,
     getData,
     updateFromStorage,
+    getDailies: () => data.dailies || [],
     // ... (остальные публичные методы)
   };
 })();
