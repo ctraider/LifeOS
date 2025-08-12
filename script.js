@@ -21,6 +21,8 @@ window.filterItems = filterItems;
 window.deleteContextItem = deleteContextItem;
 window.editContextItemName = editContextItemName;
 window.closeModal = closeModal;
+window.exportData = exportData;
+window.importDataFile = importDataFile;
 
 // Экспорт функций планировщика в глобальную область
 window.toggleCompletePlanner = toggleCompletePlanner;
@@ -775,10 +777,159 @@ window.LifePlanner = (function() {
   };
 })();
 
+// === Система потребностей и критических уведомлений ===
+const DEFAULT_NEEDS = {
+  hunger: 70,
+  rest: 80,
+  recreation: 60,
+  beauty: 50,
+  comfort: 75,
+  space: 90
+};
+
+function loadNeeds() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('needs'));
+    if (!stored) return { ...DEFAULT_NEEDS };
+    const validated = {};
+    for (const key of Object.keys(DEFAULT_NEEDS)) {
+      const val = Number(stored[key]);
+      validated[key] = isNaN(val)
+        ? DEFAULT_NEEDS[key]
+        : Math.min(100, Math.max(0, val));
+    }
+    return validated;
+  } catch (e) {
+    return { ...DEFAULT_NEEDS };
+  }
+}
+
+function saveNeeds(needs) {
+  const prev = localStorage.getItem('needs');
+  if (prev !== null) {
+    localStorage.setItem('needsBackup', prev);
+  }
+  localStorage.setItem('needs', JSON.stringify(needs));
+}
+
+let needs = loadNeeds();
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function translateNeed(key) {
+  const map = {
+    hunger: 'Голод',
+    rest: 'Отдых',
+    recreation: 'Развлечение',
+    beauty: 'Красота',
+    comfort: 'Комфорт',
+    space: 'Пространство'
+  };
+  return map[key] || key;
+}
+
+function updateNeedUI(key, value) {
+  const progress = document.getElementById(`need${capitalize(key)}`);
+  const statusSpan = document.getElementById(`${key}Status`);
+  if (progress) progress.value = value;
+  if (statusSpan) {
+    let status;
+    if (value < 20) status = 'Критически';
+    else if (value < 50) status = 'Низко';
+    else if (value < 80) status = 'Нормально';
+    else status = 'Отлично';
+    statusSpan.textContent = status;
+  }
+}
+
+function updateNeedsUI() {
+  for (const key in needs) {
+    updateNeedUI(key, needs[key]);
+  }
+}
+
+function showCriticalNotification(key) {
+  const list = document.getElementById('rpgNotifications');
+  if (!list) return;
+  const existing = list.querySelector(`.rpg-notification-item[data-need='${key}']`);
+  if (existing) return;
+  const item = document.createElement('div');
+  item.className = 'rpg-notification-item warning';
+  item.dataset.need = key;
+  item.innerHTML = `<i class="fas fa-exclamation-triangle"></i><span>Низкий уровень: ${translateNeed(key)}</span>`;
+  list.appendChild(item);
+}
+
+function awardXPForNeeds() {
+  if (!window.LifePlanner || !window.LifePlanner.addXP) return;
+  for (const key in needs) {
+    if (needs[key] >= 80) {
+      window.LifePlanner.addXP(1);
+    }
+  }
+}
+
+function degradeNeeds() {
+  let changed = false;
+  for (const key in needs) {
+    const newVal = Math.max(0, needs[key] - 0.1);
+    if (newVal !== needs[key]) {
+      needs[key] = newVal;
+      changed = true;
+      if (newVal < 20) showCriticalNotification(key);
+    }
+  }
+  if (changed) {
+    saveNeeds(needs);
+    updateNeedsUI();
+    awardXPForNeeds();
+  }
+}
+
+function exportData() {
+  const dataStr = JSON.stringify(localStorage);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lifeos-data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importDataFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (typeof imported === 'object') {
+        localStorage.setItem('backupAll', JSON.stringify(localStorage));
+        for (const key in imported) {
+          localStorage.setItem(key, imported[key]);
+        }
+        needs = loadNeeds();
+        updateNeedsUI();
+        updateGamificationUI();
+      }
+    } catch (err) {
+      console.error('Import error', err);
+    }
+  };
+  reader.readAsText(file);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Убираем localStorage.clear() чтобы данные сохранялись между сессиями
     console.log('Инициализация LifeOS...');
-    
+
+    needs = loadNeeds();
+    updateNeedsUI();
+    setInterval(degradeNeeds, 60000);
+
     loadPersonaData();
     loadInventory();
     renderHealthStats();
@@ -787,7 +938,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.LifePlanner.init();
         console.log('LifePlanner инициализирован');
     }
-    
+
     // Проверяем данные после инициализации
     const data = window.LifePlanner.getData();
     console.log('Данные LifePlanner после инициализации:', data);
@@ -819,6 +970,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const summaryTab = document.getElementById('summary');
     if (summaryTab) {
         observer.observe(summaryTab, { attributes: true });
+    }
+
+    const exportBtn = document.getElementById('exportDataBtn');
+    const importBtn = document.getElementById('importDataBtn');
+    const importInput = document.getElementById('importDataInput');
+    if (exportBtn) exportBtn.addEventListener('click', exportData);
+    if (importBtn && importInput) {
+        importBtn.addEventListener('click', () => importInput.click());
+        importInput.addEventListener('change', importDataFile);
     }
 });
 
