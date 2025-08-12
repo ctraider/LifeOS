@@ -462,7 +462,8 @@ window.LifePlanner = (function() {
         health: [], // Журнал здоровья
         healthStats: [], // RPG характеристики здоровья
         medicalHistory: [], // История операций и процедур
-        journal: [] // Журнал событий
+        journal: [], // Журнал событий
+        schedule: {} // Расписание дня
     };
   let filterCompleted = null;
   let currentDate = new Date();
@@ -486,6 +487,7 @@ window.LifePlanner = (function() {
           data.healthStats = data.healthStats || [];
           data.medicalHistory = data.medicalHistory || [];
           data.journal = data.journal || [];
+          data.schedule = data.schedule || {};
       }
   }
 
@@ -1213,26 +1215,40 @@ function renderDailySchedule() {
     const scheduleContainer = document.getElementById('dailyScheduleContainer');
     if (!scheduleContainer) return;
 
-    // Очищаем текущее расписание
+    const scheduleData = LifePlanner.getData().schedule || {};
     scheduleContainer.innerHTML = '';
 
-    for(let i=0; i<24; i++){
-        let hourBlock = document.createElement('div');
-        hourBlock.className = 'schedule-hour-block';
-        hourBlock.title = i + ':00 - ' + (i+1) + ':00 - Свободно';
+    for (let i = 0; i < 24; i++) {
+        const hourBlock = document.createElement('div');
+        hourBlock.className = 'daily-schedule-hour-block';
         hourBlock.textContent = i.toString().padStart(2, '0');
-        hourBlock.onclick = () => alert('Назначить задачу на ' + i + ':00');
+
+        const entry = scheduleData[i];
+        if (entry) {
+            hourBlock.title = `${i}:00 - ${i + 1}:00 - ${entry.activity}`;
+            hourBlock.classList.add(`daily-schedule-${entry.type}`);
+        } else {
+            hourBlock.title = `${i}:00 - ${i + 1}:00 - Свободно`;
+        }
+
+        hourBlock.onclick = () => {
+            const activity = prompt('Введите активность (пусто для очистки):', entry ? entry.activity : '');
+            if (activity === null) return;
+
+            if (activity.trim() === '') {
+                delete scheduleData[i];
+            } else {
+                const type = prompt('Тип активности (work, recreation, sleep):', entry ? entry.type : 'work');
+                scheduleData[i] = { activity: activity.trim(), type: (type || 'work').trim() };
+            }
+
+            LifePlanner.getData().schedule = scheduleData;
+            LifePlanner.saveData();
+            renderDailySchedule();
+        };
+
         scheduleContainer.appendChild(hourBlock);
     }
-
-    // Здесь можно добавить логику для загрузки и отображения реальных событий расписания
-    // Например, из LifePlanner.getData().schedule
-    // Временно оставим примеры назначения цветов
-    if(scheduleContainer.children[8]) scheduleContainer.children[8].style.background = '#4A5A6A'; // Work
-    if(scheduleContainer.children[9]) scheduleContainer.children[9].style.background = '#4A5A6A';
-    if(scheduleContainer.children[12]) scheduleContainer.children[12].style.background = '#5A6A4A'; // Recreation
-    if(scheduleContainer.children[22]) scheduleContainer.children[22].style.background = '#202020'; // Sleep
-    if(scheduleContainer.children[23]) scheduleContainer.children[23].style.background = '#202020';
 }
 
 function renderWorkPriorities() {

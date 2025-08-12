@@ -760,20 +760,22 @@
 
         .daily-schedule-container {
             display: grid;
-            grid-template-columns: repeat(24, 1fr);
+            grid-template-columns: repeat(24, minmax(50px, 1fr));
             gap: 2px;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
+            background: #2E2E2E;
+            border: 1px solid #4A4A4A;
             padding: 5px;
             height: 100px;
+            overflow-x: auto;
         }
 
         .daily-schedule-hour-block {
-            border: 1px solid #ccc;
-            background: #fff;
+            border: 1px solid #4A4A4A;
+            background: #383838;
             font-size: 10px;
             text-align: center;
             cursor: pointer;
+            color: #D1C7B7;
         }
 
         .daily-schedule-work {
@@ -786,6 +788,22 @@
 
         .daily-schedule-sleep {
             background: #202020 !important;
+        }
+
+        @media (max-width: 600px) {
+            .daily-schedule-container {
+                grid-template-columns: repeat(24, minmax(40px, 1fr));
+                height: 150px;
+            }
+            .daily-schedule-hour-block {
+                font-size: 8px;
+            }
+            header h1 {
+                font-size: 1.2em;
+            }
+            .level {
+                font-size: 0.8em;
+            }
         }
 
         .work-priorities-list {
@@ -1917,14 +1935,6 @@
         }
 
         /* Styles for daily schedule in script.js */
-        .schedule-hour-block {
-            border: 1px solid #4A4A4A;
-            background: #383838; /* Default background for empty slot */
-            font-size: 10px;
-            text-align: center;
-            cursor: pointer;
-        }
-
         /* Styles for medical history in script.js */
         .medical-history-item {
             border-bottom: 1px dashed #4A4A4A;
