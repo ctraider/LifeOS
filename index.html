@@ -1146,9 +1146,14 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    // 3) Загружает список задач из localStorage
+    // 3) Загружает список задач из централизованных данных LifePlanner
     function loadTasks() {
-      return JSON.parse(localStorage.getItem("tasks") || "[]");
+      try {
+        return LifePlanner.getData().tasks || [];
+      } catch (e) {
+        // Fallback для старых данных, если LifePlanner недоступен
+        return JSON.parse(localStorage.getItem("tasks") || "[]");
+      }
     }
 
     // 4) Обработчик клика по кнопке отправки
