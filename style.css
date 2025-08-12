@@ -1004,6 +1004,7 @@
             color:#888;
         }
 
+        /* Закомментировано окно помощника - будет использоваться позже
         #chat-container {
             position: fixed;
             bottom: 20px;
@@ -1055,6 +1056,7 @@
             padding:0 12px;
             cursor:pointer;
         }
+        */
 
         .planner-root {
           display: flex;
@@ -1824,9 +1826,9 @@
         }
 
         .inventory-drag-hint {
-            margin-top: 2rem;
-            text-align: center;
-            color: #888;
+            margin-top:2rem;
+            text-align:center;
+            color:#888;
         }
 
         .life-area-control-display {
@@ -2482,4 +2484,364 @@
 
         .rpg-character-panel {
             animation: rpg-glow 3s ease-in-out infinite;
+        }
+
+        /* Стили для ежедневных задач (Дейликов) */
+        .rpg-dailies-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .rpg-dailies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .rpg-daily-card {
+            background: linear-gradient(135deg, #2A2A2A 0%, #3A3A3A 100%);
+            border: 1px solid #4A4A4A;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 200px;
+        }
+
+        .rpg-daily-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .rpg-daily-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            border-color: #5A5A5A;
+        }
+
+        .rpg-daily-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .rpg-daily-card.completed {
+            background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+            border-color: #4CAF50;
+            opacity: 0.9;
+        }
+
+        .rpg-daily-card.completed::before {
+            background: linear-gradient(90deg, #4CAF50, #66BB6A);
+            transform: scaleX(1);
+        }
+
+        .rpg-daily-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+
+        .rpg-daily-title {
+            font-weight: 600;
+            color: #E0E0E0;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .rpg-daily-card.completed .rpg-daily-title {
+            text-decoration: line-through;
+            color: #A5D6A7;
+        }
+
+        .rpg-daily-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 1.5rem;
+            color: #E0E0E0;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .rpg-daily-card:hover .rpg-daily-icon {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .rpg-daily-card.completed .rpg-daily-icon {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+        }
+
+        .rpg-daily-image {
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(135deg, #4A4A4A 0%, #5A5A5A 100%);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .rpg-daily-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .rpg-daily-card:hover .rpg-daily-image img {
+            transform: scale(1.05);
+        }
+
+        .rpg-daily-image-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #888;
+            background: linear-gradient(135deg, #4A4A4A 0%, #5A5A5A 100%);
+        }
+
+        .rpg-daily-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #4A4A4A;
+            border-radius: 6px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .rpg-daily-checkbox:hover {
+            border-color: #5A5A5A;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .rpg-daily-card.completed .rpg-daily-checkbox {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .rpg-daily-card.completed .rpg-daily-checkbox::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .rpg-daily-description {
+            color: #B0B0B0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 1rem;
+            flex: 1;
+        }
+
+        .rpg-daily-card.completed .rpg-daily-description {
+            color: #A5D6A7;
+            opacity: 0.8;
+        }
+
+        .rpg-daily-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+        }
+
+        .rpg-daily-xp {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #FFD700;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .rpg-daily-card.completed .rpg-daily-xp {
+            color: #A5D6A7;
+        }
+
+        .rpg-daily-time {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .rpg-daily-card.completed .rpg-daily-time {
+            color: #A5D6A7;
+        }
+
+        .rpg-daily-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: auto;
+        }
+
+        .rpg-daily-edit-btn,
+        .rpg-daily-delete-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #E0E0E0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .rpg-daily-edit-btn:hover {
+            background: rgba(33, 150, 243, 0.3);
+            color: #2196F3;
+        }
+
+        .rpg-daily-delete-btn:hover {
+            background: rgba(244, 67, 54, 0.3);
+            color: #F44336;
+        }
+
+        .rpg-daily-card.completed .rpg-daily-edit-btn,
+        .rpg-daily-card.completed .rpg-daily-delete-btn {
+            background: rgba(76, 175, 80, 0.2);
+            color: #A5D6A7;
+        }
+
+        .rpg-daily-card.completed .rpg-daily-edit-btn:hover {
+            background: rgba(33, 150, 243, 0.3);
+            color: #2196F3;
+        }
+
+        .rpg-daily-card.completed .rpg-daily-delete-btn:hover {
+            background: rgba(244, 67, 54, 0.3);
+            color: #F44336;
+        }
+
+        /* Адаптивность для мобильных устройств */
+        @media (max-width: 768px) {
+            .rpg-dailies-grid {
+                grid-template-columns: 1fr;
+                max-height: 300px;
+            }
+            
+            .rpg-daily-card {
+                padding: 1rem;
+                min-height: 180px;
+            }
+            
+            .rpg-daily-title {
+                font-size: 1rem;
+            }
+            
+            .rpg-daily-description {
+                font-size: 0.85rem;
+            }
+            
+            .rpg-daily-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+            
+            .rpg-daily-image {
+                height: 100px;
+            }
+            
+            .rpg-daily-actions {
+                gap: 0.25rem;
+            }
+            
+            .rpg-daily-edit-btn,
+            .rpg-daily-delete-btn {
+                width: 24px;
+                height: 24px;
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .rpg-dailies-grid {
+                gap: 0.75rem;
+            }
+            
+            .rpg-daily-card {
+                padding: 0.75rem;
+                min-height: 160px;
+            }
+            
+            .rpg-daily-image {
+                height: 80px;
+            }
+            
+            .rpg-daily-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Анимация для выполнения задачи */
+        @keyframes dailyComplete {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .rpg-daily-card.completing {
+            animation: dailyComplete 0.5s ease;
+        }
+
+        /* Стили для кнопки добавления в заголовке */
+        .rpg-section-title .rpg-btn-small {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            margin-left: 0.5rem;
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
+        }
+
+        .rpg-section-title .rpg-btn-small:hover {
+            background: rgba(76, 175, 80, 0.3);
+            transform: scale(1.05);
         }
