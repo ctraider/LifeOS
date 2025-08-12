@@ -518,8 +518,11 @@ window.LifePlanner = (function() {
         healthStats: [], // RPG характеристики здоровья
         medicalHistory: [], // История операций и процедур
         journal: [], // Журнал событий
-        schedule: {} // Расписание дня
+        schedule: {}, // Расписание дня
+        dailies: [], // Ежедневные задачи
+        lastDailiesReset: '' // Дата последнего сброса дейликов
     };
+  let dataLoaded = false;
   let filterCompleted = null;
   let currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
@@ -543,7 +546,10 @@ window.LifePlanner = (function() {
           data.medicalHistory = data.medicalHistory || [];
           data.journal = data.journal || [];
           data.schedule = data.schedule || {};
+          data.dailies = data.dailies || [];
+          data.lastDailiesReset = data.lastDailiesReset || '';
       }
+      dataLoaded = true;
   }
 
   function saveData() {
@@ -819,10 +825,11 @@ window.LifePlanner = (function() {
     renderTasks,
     toggleCompletePlanner, // Оставляем для совместимости, но ее логика теперь пуста/предупреждает
     deleteTaskPlanner,
-    getData: function() { return data; }, // Экспортируем данные
+    getData: function() { if (!dataLoaded) loadData(); return data; }, // Экспортируем данные
     saveData, // Экспортируем функцию сохранения данных
     addXP, // Экспортируем addXP
-    getRequiredXPForLevel // Экспортируем getRequiredXPForLevel
+    getRequiredXPForLevel, // Экспортируем getRequiredXPForLevel
+    getDailies: () => data.dailies || []
     // ... (остальные публичные методы)
   };
 })();
