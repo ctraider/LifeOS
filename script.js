@@ -697,6 +697,9 @@ window.LifePlanner = (function() {
     dueDateInput.value = '';
     renderTasks();
     generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    if (typeof updateRPGOverview === 'function') {
+      updateRPGOverview();
+    }
   }
   function renderTasks() {
     const taskList = document.getElementById('task-list');
@@ -737,6 +740,9 @@ window.LifePlanner = (function() {
         }
         saveData();
         renderTasks();
+        if (typeof updateRPGOverview === 'function') {
+          updateRPGOverview();
+        }
       });
       leftBlock.appendChild(checkbox);
       if (task.subTasks && task.subTasks.length > 0) {
@@ -1657,9 +1663,12 @@ function updateGamificationUI() {
   
   // Создаем сегменты для XP бара
   createXPSegments(xpForNextLevel);
-  
+
   // Обновляем подсказку
   updateXPTooltip(xp, xpForNextLevel, level);
+  if (typeof updateRPGXPBar === 'function') {
+    updateRPGXPBar();
+  }
 }
 
 // Функция для создания сегментов XP бара

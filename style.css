@@ -62,7 +62,7 @@
         body {
             font-family: 'RimWorld', 'Segoe UI', sans-serif;
             margin: 0;
-            padding: 0;
+            padding: 24px 0 0 0;
             background: #2E2E2E; /* Dark gray, common in RimWorld UI */
             color: #D1C7B7; /* Light beige/off-white text */
             font-size: 14px;
@@ -91,8 +91,12 @@
 
         /* Новая система XP прогресс-бара */
         .xp-container {
-            position: relative;
-            margin: 0.5rem 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            margin: 0;
+            z-index: 1000;
         }
 
         .xp-bar-wrapper {
