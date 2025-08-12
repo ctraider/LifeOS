@@ -468,7 +468,7 @@ window.LifePlanner = (function() {
   let currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
 
-  const LOCAL_STORAGE_KEY = 'lifeosData';
+  const LOCAL_STORAGE_KEY = 'lifeOSData';
 
   function loadData() {
       const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -491,11 +491,6 @@ window.LifePlanner = (function() {
 
   function saveData() {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-  }
-
-  // --- Функции для задач ---
-  function saveData() {
-    localStorage.setItem('lifeOSData', JSON.stringify(data));
   }
 
   // Функция для расчета опыта, необходимого для следующего уровня (прогрессивная шкала)
@@ -934,6 +929,10 @@ document.addEventListener('DOMContentLoaded', function() {
     renderHealthLog();
     if (window.LifePlanner && typeof window.LifePlanner.init === 'function') {
         window.LifePlanner.init();
+        // Дополнительный вызов гарантирует, что задачи отрисуются сразу после загрузки
+        if (typeof window.LifePlanner.renderTasks === 'function') {
+            window.LifePlanner.renderTasks();
+        }
         console.log('LifePlanner инициализирован');
     }
 
