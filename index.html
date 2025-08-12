@@ -387,33 +387,8 @@
 
         <div id="work_schedule" class="work-sub-content">
             <h3>Расписание Дня</h3>
-            <div id="dailyScheduleContainer" style="display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 5px; height: 100px;">
-                <!-- Часы дня будут здесь, например, div для каждого часа -->
-                <script>
-                    const scheduleContainer = document.getElementById('dailyScheduleContainer');
-                    if (scheduleContainer) {
-                        for(let i=0; i<24; i++){
-                            let hourBlock = document.createElement('div');
-                            hourBlock.style.border = '1px solid #ccc';
-                            hourBlock.style.background = '#fff';
-                            hourBlock.title = i + ':00 - ' + (i+1) + ':00 - Свободно';
-                            hourBlock.textContent = i.toString().padStart(2, '0');
-                            hourBlock.style.fontSize = '10px';
-                            hourBlock.style.textAlign = 'center';
-                            hourBlock.style.cursor = 'pointer';
-                            hourBlock.onclick = () => alert('Назначить задачу на ' + i + ':00');
-                            scheduleContainer.appendChild(hourBlock);
-                        }
-                        // Пример назначения
-                        if(scheduleContainer.children[8]) scheduleContainer.children[8].style.background = 'lightblue'; // Работа
-                        if(scheduleContainer.children[9]) scheduleContainer.children[9].style.background = 'lightblue';
-                        if(scheduleContainer.children[12]) scheduleContainer.children[12].style.background = 'lightgreen'; // Отдых
-                        if(scheduleContainer.children[22]) scheduleContainer.children[22].style.background = 'darkgrey'; // Сон
-                        if(scheduleContainer.children[23]) scheduleContainer.children[23].style.background = 'darkgrey';
-                    }
-                </script>
-                </div>
-            </div>
+            <div id="dailyScheduleContainer" class="daily-schedule-container"></div>
+        </div>
 
         <div id="work_priorities" class="work-sub-content">
             <h3>Приоритеты Работ</h3>
