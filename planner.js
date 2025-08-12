@@ -520,19 +520,84 @@ window.LifePlanner = (function() {
 
   // --- Геймификация и XP ---
   function getTaskXP(task) {
-    let xp = 10;
+    let baseXP = 50;
     switch (task.priority) {
-      case 'low': xp *= 0.5; break;
-      case 'medium': xp *= 1; break;
-      case 'high': xp *= 2; break;
-      case 'boss': xp *= 3; break;
+      case 'low': baseXP *= 0.8; break;
+      case 'medium': baseXP *= 1.0; break;
+      case 'high': baseXP *= 1.5; break;
+      case 'boss': baseXP *= 2.0; break;
+    }
+    if (task.importance === 'important' && task.urgency === 'urgent') {
+      baseXP *= 1.3;
+    } else if (task.importance === 'important') {
+      baseXP *= 1.1;
+    } else if (task.urgency === 'urgent') {
+      baseXP *= 1.1;
     }
     if (task.dueDate) {
       const now = new Date();
-      const due = new Date(task.dueDate);
-      xp += (now <= due) ? 5 : -5;
+      const dueDate = new Date(task.dueDate);
+      const daysUntilDue = (dueDate - now) / (1000 * 60 * 60 * 24);
+      if (daysUntilDue < 0) {
+        baseXP *= 0.7;
+      } else if (daysUntilDue <= 1) {
+        baseXP *= 1.2;
+      }
     }
-    return Math.max(0, Math.round(xp));
+    return Math.max(0, Math.round(baseXP));
+  }
+  function getRequiredXPForLevel(level) {
+    return Math.floor(level * 75 + (level - 1) * 25);
+  }
+  function addXP(amount, task = null) {
+    if (task && amount === undefined) {
+      amount = getTaskXP(task);
+    }
+    data.xp = (data.xp || 0) + amount;
+    data.currency = Math.round(data.xp * 0.5);
+    let xpRequired = getRequiredXPForLevel(data.level);
+    let leveledUp = false;
+    while (data.xp >= xpRequired) {
+      data.xp -= xpRequired;
+      data.level += 1;
+      leveledUp = true;
+      xpRequired = getRequiredXPForLevel(data.level);
+    }
+    saveData();
+    updateGamificationUI();
+    showXPNotification(amount, leveledUp);
+  }
+  function showXPNotification(amount, leveledUp = false) {
+    const notification = document.createElement('div');
+    notification.className = 'xp-notification';
+    notification.innerHTML = `
+      <div class="xp-gain">+${amount} XP</div>
+      ${leveledUp ? '<div class="level-up">УРОВЕНЬ ПОВЫШЕН!</div>' : ''}
+    `;
+    notification.style.cssText = `
+      position: fixed;
+      top: 100px;
+      right: 20px;
+      background: linear-gradient(135deg, #D4AF37, #FFD700);
+      color: #000;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.6);
+      z-index: 10000;
+      font-weight: bold;
+      text-align: center;
+      border: 2px solid #B8860B;
+      animation: xpSlideIn 0.5s ease-out;
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+      notification.style.animation = 'xpSlideOut 0.5s ease-out';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 500);
+    }, 3000);
   }
   function calcTotalXP(task) {
     let totalXP = task.completed ? getTaskXP(task) : 0;
@@ -546,10 +611,17 @@ window.LifePlanner = (function() {
   function recalcGamification(tasksArr) {
     let xp = 0;
     tasksArr.forEach(task => { xp += calcTotalXP(task); });
-    const currency = Math.round(xp * 0.5);
     data.xp = xp;
-    data.currency = currency;
-    data.level = Math.floor(xp / 50) + 1;
+    data.currency = Math.round(xp * 0.5);
+    let level = 1;
+    let remainingXP = xp;
+    let xpRequired = getRequiredXPForLevel(level);
+    while (remainingXP >= xpRequired) {
+      remainingXP -= xpRequired;
+      level += 1;
+      xpRequired = getRequiredXPForLevel(level);
+    }
+    data.level = level;
     data.hp = 100;
     updateGamificationUI();
     saveData();
@@ -868,6 +940,8 @@ window.LifePlanner = (function() {
     saveData,
     getData,
     updateFromStorage,
+    addXP,
+    getRequiredXPForLevel,
     getDailies: () => data.dailies || [],
     // ... (остальные публичные методы)
   };
